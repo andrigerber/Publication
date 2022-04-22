@@ -1,128 +1,3748 @@
 ---
-title: "Journal"
+title: > 
+  Sex Differences in Falls Among the Elderly Community-Dwelling Swiss Population:
+  A Population-Based Cross-Sectional Survey
+author:
+  name: 'Andri O. Gerber ^[Email: andri.gerber@gmx.ch | Department of Health Professions, Bern University of Applied Sciences, Bern, Switzerland: <a href="https://www.bfh.ch/de/?gclid=Cj0KCQjwl7qSBhD-ARIsACvV1X2PLd-PdfjCQDMBqKPvAfzXiFFAHHAaJmiZJGydIKaoT92X-AiuS4EaAgZ6EALw_wcB">BFH</a> | ORCiD: <a href="https://orcid.org/0000-0002-9793-041X">ID</a>]'
+  affiliation: Department of Health Professions, Bern University of Applied Sciences, Bern, Switzerland
+  footnote: Corresponding author
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
-    toc: true
-    toc_float: true
-    collapsed: false
-    number_sections: false
-    toc_depth: 1
-    #code_folding: hide
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    theme: simplex
+    paged_df: yes
+    code_folding: show
+    code_download: yes
+  includes:
+    in_header: structure.tex
+  pdf_document:
+    toc: yes
+bibliography: references.bib
+csl: plos-one.csl
+link-citations: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 ```
 
-IMPORTANT: You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
+# R setup and required packages
 
+```{r warning=FALSE}
+library(pacman)
+pacman::p_load(
+  rio,
+  ggplot2,
+  dplyr,
+  survey,
+  hexbin,
+  psych,
+  DT,
+  plotly,
+  DataExplorer,
+  tableone,
+  jtools,
+  ggstance,
+  MatchIt,
+  Publish,
+  tidyverse,
+  Hmisc,
+  mice,
+  VIM,
+  corrplot,
+  sjPlot,
+  codebook,
+  officer,
+  flextable,
+  pander
+)
+```
 
-This is an .Rmd file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# Loading and formatting the dataset
 
-# My first post
+The dataset of the Swiss Health Interview survey (SHIS) were anonymised prior to the analysis (for [further information](https://dam-api.bfs.admin.ch/hub/api/dam/assets/14839332/master)) and permission to analyse and publish the restults was obtained through a contract with the Swiss Federal Statistical Office (SFSO).
 
-2018 | 7 | 23 Last compiled: `r Sys.Date()`
-
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
-
-## Second level header
-
-You can add more headers by adding more hashtags. These won't be put into the table of contents
-
-### third level header
-
-Here's an even lower level header
-
-# My second post (note the order)
-
-2018 | 7 | 23 Last compiled: `r Sys.Date()`
-
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
-
-# Adding R stuff
-
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the sam place. 
-
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation =1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
+## Load and subset cross sectional data ($\geqq$ 60 years of age)
 
 ```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
+setwd("C:/Users/gerbe/Desktop/Desktopordner/Master/Masterthesis/Data_Analyse/Daten")
+dat <- rio::import("shs_2007_2012_2017_combined.dta") # SHIS Data
+dat <- subset(dat, alter >= 60)
 ```
 
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag), from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You learn all of these things and more can be customized in each R code block.
+## Formatting {.tabset}
 
-# The big idea
+-   Factorize: levels(), labels()
+-   Dichotomize
+-   Categorize
 
-Use this lab journal to record what you do in R. This way I will be able to see what you are doing and help you along the way. You will also be creating a repository of all the things you do. You can make posts about everything. Learning specific things in R (project unrelated), and doing things for the project that we will discuss at the beginning of the Fall semester. You can get started now by fiddling around with googling things, and trying stuff out in R. I've placed some helpful starting links in the links page on this website
+![[Risk factor model for falls in older age WHO](https://www.who.int/publications/i/item/9789241563536)](Risk%20factor%20model%20for%20falls%20in%20older%20age%20WHO.PNG)
 
-# What can you do right now by yourself?
-
-It's hard to learn programming when you don't have specific problems that you are trying to solve. Everything just seems abstract.
-
-I wrote an [introductory programming book that introduces R](https://crumplab.github.io/programmingforpsych/), and gives some [concrete problems for you to solve](https://crumplab.github.io/programmingforpsych/programming-challenges-i-learning-the-fundamentals.html). 
-
-To get the hang of journaling and solving the problems to learn programming, my suggestion is that you use this .Rmd file to solve the problems. It would look like this:
-
-# Problem 1
-
-Do simple math with numbers, addition, subtraction, multiplication, division
+### Outcome variables
 
 ```{r}
-1+2
-2*5
-5/3
-(1+6+4)/5
+dat$fall <- factor(
+  dat$taltp01,
+  levels = c(1, 2),
+  labels = c("fall last 12 months", "no fall last 12 months")
+)
 
+# integrate no fall (0) into variable taltp02 (fall_count)
+dat$fall_count_4 <- dat$taltp02
+dat$fall_count_4[dat$taltp01==2] <- 0
+
+dat$fall_count <- factor(
+  dat$fall_count_4,
+  levels = c(0, 1, 2, 3),
+  labels = c(
+    "no fall last 12 months",
+    "1 fall last 12 months",
+    "2 falls last 12 months",
+    "more then 2 falls last 12 months"
+  )
+)
+
+dat$fall_count_collapsed <- fct_collapse(dat$fall_count, two_falls_or_more = c("2 falls last 12 months", "more then 2 falls last 12 months"), no_or_one_fall = c("no fall last 12 months", "1 fall last 12 months"))
+
+
+outcome_fall <- c("fall")
+outcome_fall_count <- c("fall_count")
+outcome_fall_count_collapsed <- c("fall_count_collapsed")
+c(outcome_fall, outcome_fall_count, outcome_fall_count_collapsed)
 ```
 
-# Problem 2
+### Exposure variables
 
-Put numbers into variables, do simple math on the variables
+```{r,echo = TRUE}
+dat$gender <- factor(dat$sex,
+                     levels = c(1, 2),
+                     labels = c("man", "woman"))
+
+exposure_variable <- c("gender")
+exposure_variable
+```
+
+### Socio-economic variable
 
 ```{r}
-a<-1
-b<-2
-a+b
+dat$education <- factor(
+  dat$ausbild3,
+  levels = c(1, 2, 3),
+  labels = c(
+    "compulsory education",
+    "upper secondary education",
+    "tertiary education"
+  )
+)
 
-d<-c(1,2,3)
-e<-c(5,6,7)
-d+e
-d*e
-d/e
-
+socio_economic_covariate <- c("education")
+socio_economic_covariate
 ```
 
-# Problem 3
-
-Write code that will place the numbers 1 to 100 separately into a variable using for loop. Then, again using the seq function.
+### Socio-demographic variables
 
 ```{r}
-# for loop solution
-# i becomes the number 1 to 100 at each step of the loop
+dat$urban_rural <- factor(dat$stala,
+                          levels = c(1, 2),
+                          labels = c("urban area", "rural area"))
+
+dat$nationality <- factor(dat$nation2,
+                          levels = c(1, 2),
+                          labels = c("swiss", "foreigner"))
+
+dat$language <- factor(
+  dat$sprache,
+  levels = c(1, 2, 3),
+  labels = c("german", "french", "italian")
+)
+
+socio_demographic_covariate <- c("urban_rural", "nationality", "language")
+socio_demographic_covariate
+```
+
+### Biological variables
+
+```{r,echo = TRUE}
+# categorize age in 3 groups
+dat$age_cut[dat$alter < 70] <- "60-69"
+dat$age_cut[dat$alter >= 70 & dat$alter < 80] <- "70-79"
+dat$age_cut[dat$alter >= 80] <- "80+"
+dat$age_cut <- as.factor(dat$age_cut)
+# Set reference category
+dat$age_cut <- relevel(dat$age_cut, ref = "60-69")
+
+dat$age <- dat$alter
+
+# Functional limitations (vision, hearing, speech, walking)
+dat$FL <- factor(
+  dat$limfonc,
+  levels = c(1, 2, 3, 4),
+  labels = c(
+    "No difficulty",
+    "Slight difficulty",
+    "Great difficulty",
+    "Inability"
+  )
+)
+
+# Categorize bmi into 4 groups
+dat$bmi_cut[dat$bmi < 18.5] <- "underweight"
+dat$bmi_cut[dat$bmi >= 18.5 & dat$bmi < 25] <- "normal weight"
+dat$bmi_cut[dat$bmi >= 25 & dat$bmi < 30] <- "overweight"
+dat$bmi_cut[dat$bmi >= 30] <- "obesity"
+dat$bmi_cut <- as.factor(dat$bmi_cut)
+dat$bmi_cut <- relevel(dat$bmi_cut, ref = "normal weight") # set reference for normal weight class
+
+# Self-perceived health status
+dat$SHS <- factor(
+  dat$tsubg_allyears,
+  levels = c(1, 2, 3, 4, 5),
+  labels = c("very good", "good", "average", "poor", "very poor")
+) 
+
+# Self-perceived health status for models (collapse very good and good)
+
+dat$SHS_collapsed <- factor(
+  dat$tsubg_allyears,
+  levels = c(1, 2, 3, 4, 5),
+  labels = c("very good", "good", "average", "poor", "very poor")
+) 
+
+dat$SHS_collapsed <- fct_collapse(dat$SHS_collapsed, good = c("very good", "good"))
 
 
-a <- length(100) # make empty variable, set length to 100
-for (i in 1:100){
-  a[i] <-i #assigns the number in i, to the ith index of a
-}
 
-print(a)
+dat$diabetes <- factor(dat$diabete,
+                       levels = c(1, 2),
+                       labels = c("yes", "no"))
+# Set reference category
+dat$diabetes <- relevel(dat$diabetes, ref = "no")
 
-# for loop solution #2
+dat$osteoarthritis <- factor(dat$tkran10c,
+                             levels = c(1, 2),
+                             labels = c("yes", "no"))
+# Set reference category
+dat$osteoarthritis <- relevel(dat$osteoarthritis, ref = "no")
 
-a<-c() #create empty variable using combine command
-for (i in 1:100){
-  a<-c(a,i) # keeps combining a with itself and the new number in i
-}
-print(a)
+dat$heart_attack <- factor(dat$tkran10f,
+                           levels = c(1, 2),
+                           labels = c("yes", "no"))
+# Set reference category
+dat$heart_attack <- relevel(dat$heart_attack, ref = "no")
 
-# seq solution
-a <- seq(1,100,1) # look up help for seq using ?seq() in console
-print(a)
+dat$stroke <- factor(dat$tkran10g,
+                     levels = c(1, 2),
+                     labels = c("yes", "no"))
+# Set reference category
+dat$stroke <- relevel(dat$stroke, ref = "no")
+
+dat$urinary_incontinence <- factor(dat$tkran10j,
+                                   levels = c(1, 2),
+                                   labels = c("yes", "no"))
+# Set reference category
+dat$urinary_incontinence <- relevel(dat$urinary_incontinence, ref = "no")
+
+dat$osteoporosis <- factor(dat$tkran10d,
+                           levels = c(1, 2),
+                           labels = c("yes", "no"))
+# Set reference category
+dat$osteoporosis <- relevel(dat$osteoporosis, ref = "no")
+
+
+biological_covariates <- c("age_cut", "age", "FL", "bmi_cut", "bmi", "SHS", "diabetes", "osteoarthritis", "heart_attack", "stroke", "urinary_incontinence", "osteoporosis")
+biological_covariates
+```
+
+### Behavioral variables
+
+```{r}
+# Physical activity (weekly)
+dat$activity <- factor(
+  dat$actphy3,
+  levels = c(1, 2, 3),
+  labels = c("inactive", "partially active", "active")
+)
+
+dat$alcohol <- factor(
+  dat$alcchron3,
+  levels = c(1, 2, 3),
+  labels = c("abstinent", "low risk", "moderate or increased risk")
+)
+
+dat$smoke <- factor(
+  dat$tabac3,
+  levels = c(1, 2, 3),
+  labels = c("no smoker", "former smoker", "smoker")
+)
+
+behavioral_covariate <- c("activity", "alcohol", "smoke")
+behavioral_covariate
+```
+
+### Stratae variable
+
+```{r}
+dat$strata <- factor(
+  dat$kanton,
+  levels = c(1:27),
+  labels = c(
+    "Zurich",
+    "Bern",
+    "Lucerne",
+    "Uri",
+    "Schwyz",
+    "Obwalden",
+    "Nidwalden",
+    "Glarus",
+    "Zug",
+    "Fribourg",
+    "Solothurn",
+    "Basel-City",
+    "Basel-Country",
+    "Schaffhausen",
+    "Appenzell Ausserrhoden",
+    "Appenzell Innerrhoden",
+    "St. Gallen",
+    "Graubünden",
+    "Aargau",
+    "Thurgau",
+    "Tessin",
+    "Vaud",
+    "Wallis",
+    "Neuchâtel",
+    "Geneva",
+    "Jura",
+    "Liechstenstein"
+  )
+)
+
+strata <- c("strata")
+strata
+```
+
+### Weight variable
+
+```{r}
+dat$weight <- dat$wght
+
+weight <- c("weight")
+weight
+```
+
+-   Get variable names
+
+```{r}
+variable_names <-
+  c(
+    "fall",
+    "fall_count",
+    "gender",
+    "education",
+    "language",
+    "urban_rural",
+    "nationality",
+    "smoke",
+    "FL",
+    "bmi_cut",
+    "bmi",
+    "age_cut",
+    "age",
+    "SHS",
+    "diabetes",
+    "osteoarthritis",
+    "heart_attack",
+    "stroke",
+    "urinary_incontinence",
+    "osteoporosis",
+    "activity",
+    "alcohol",
+    "strata",
+    "weight"
+  )
+variable_names_fall <-   c(
+    "fall",
+    "gender",
+    "education",
+    "language",
+    "urban_rural",
+    "nationality",
+    "smoke",
+    "FL",
+    "bmi_cut",
+    "bmi",
+    "age_cut",
+    "age",
+    "SHS",
+    "diabetes",
+    "osteoarthritis",
+    "heart_attack",
+    "stroke",
+    "urinary_incontinence",
+    "osteoporosis",
+    "activity",
+    "alcohol",
+    "strata",
+    "weight"
+  )
+variable_names_fall_count <-  c(
+    "fall_count",
+    "gender",
+    "education",
+    "language",
+    "urban_rural",
+    "nationality",
+    "smoke",
+    "FL",
+    "bmi_cut",
+    "bmi",
+    "age_cut",
+    "age",
+    "SHS",
+    "diabetes",
+    "osteoarthritis",
+    "heart_attack",
+    "stroke",
+    "urinary_incontinence",
+    "osteoporosis",
+    "activity",
+    "alcohol",
+    "strata",
+    "weight"
+  )
+
+variable_names_nogender <-
+  c(
+    "fall",
+    "fall_count",
+    "education",
+    "language",
+    "urban_rural",
+    "nationality",
+    "smoke",
+    "FL",
+    "bmi_cut",
+    "bmi",
+    "age_cut",
+    "age",
+    "SHS",
+    "diabetes",
+    "osteoarthritis",
+    "heart_attack",
+    "stroke",
+    "urinary_incontinence",
+    "osteoporosis",
+    "activity",
+    "alcohol",
+    "strata",
+    "weight"
+  )
+```
+
+## Subset the dataset (*year, sex*)
+
+```{r}
+dat_07 <- subset(dat, intjahr == 2007)
+dat_12 <- subset(dat, intjahr == 2012)
+dat_17 <- subset(dat, intjahr == 2017) # for further analysis
+dat_17_m <- subset(dat_17, gender == "man")
+dat_17_f <- subset(dat_17, gender == "woman")
+```
+
+## Variable selection:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+dat_17_select <- select(dat_17, variable_names)
+dat_17_select_m <- select(dat_17_m, variable_names)
+dat_17_select_f <- select(dat_17_f, variable_names)
+DataExplorer::plot_str(dat_17_select, print_network = TRUE)
+```
+
+## Codebook (Metadata)
+
+```{r}
+codebook_dat_17_select<-codebook::codebook_table(dat_17_select)
+```
+
+# Summary (unweighted) sample
+
+## Check missing values
+
+The variable `diabetes` has the most missing values because of a proxy question (the question was not asked because of a previous question). For the further calculations, the complete-case-analysis was applied, as this procedure was also used in previous studies. Therefor missing values were excluded because their types cannot be identified according to the classes of Rubin et al. [@rubin1976].
+
+```{r warning = FALSE, message=FALSE}
+DataExplorer::plot_missing(dat_17_select, title = "Missing values SHIS 2017")
+DataExplorer::plot_missing(dat_17_select_m, title = "Missing values SHIS (male) 2017")
+DataExplorer::plot_missing(dat_17_select_f, title = "Missing values SHIS (female) 2017")
+```
+
+-   Missing-pattern over all variables
+
+```{r results='hide'}
+mice::md.pattern(dat_17_select)
+```
+
+-   Missing-pattern in fall, bmi, osteoarthritis, alcohol, activity, diabetes:
+
+```{r results='hide'}
+mice::md.pattern(select(dat_17_select, "fall", "bmi", "osteoarthritis", "alcohol", "activity", "diabetes")) # select variables with over 0.5% missing values
+```
+
+-   Missing values in age - bmi (histogram)
+
+```{r}
+VIM::histMiss(dat_17_select[, c("age", "bmi")])
+```
+
+## Descriptive statistics {.tabset}
+
+### Summary table of the data
+
+```{r warning = FALSE}
+dat_17_select_describe <- Hmisc::describe(dat_17_select)
+Hmisc::html(dat_17_select_describe, size = 80, title = "SHIS dataset 2017")
+```
+
+### Missing value plot
+
+```{r}
+dat_17_select_describe_plot <- plot(dat_17_select_describe)
+dat_17_select_describe_plot$Categorical
+dat_17_select_describe_plot$Continuous
+```
+
+### Variables stratified by fall
+
+```{r}
+tableone::CreateTableOne(data = dat_17_select, strata = "fall", includeNA = TRUE)
+```
+
+### Univariate distribution
+
+#### Bar chart (by frequency)
+
+```{r}
+DataExplorer::plot_bar(dat_17_select)
+```
+
+#### Bar chart by fall
+
+```{r}
+DataExplorer::plot_bar(dat_17_select)
+```
+
+#### Histogram
+
+-   age and bmi
+
+```{r echo=TRUE}
+plot_histogram(dat_17_select[, c("age", "bmi")])
+```
+
+#### QQ-Plot
+
+-   age and bmi
+
+```{r warning=FALSE}
+qq_data <- dat_17_select[, c("age", "bmi")]
+
+DataExplorer::plot_qq(qq_data)
+# Quantile-Quantile plot to visualize the deviation from probability distribution.
+```
+
+-   bmi seems skewed on both tails, apply a simple log transformation
+
+```{r echo=TRUE, warning=FALSE}
+log_qq_data <- DataExplorer::update_columns(qq_data, 2, function(x) log(x + 1))
+plot_qq(log_qq_data["bmi"])
+```
+
+### Correlation Analysis
+
+```{r}
+plot_correlation(na.omit(dat_17_select[, c("age", "bmi")]), type = "c") #only continuous
+```
+
+```{r fig1, fig.height = 10, fig.width = 10, warning=FALSE}
+plot_correlation(na.omit(dat_17_select[variable_names_fall]), type = "d", maxcat = 5L, geom_text_args = (size = 0.05)) #only descrete
+```
+
+```{r}
+# Bivariate Summaries Computed Separately by a Series of Predictors
+var.summ <- spearman2(fall~ ., data = na.omit(dat_17_select[variable_names_fall]))
+plot(var.summ, cex = 0.8)
+```
+
+#### Identify collinear predictors
+
+```{r}
+# Variable Clustering:  
+# hclust hierarchical clustering function
+# default is squared Spearman correlation coefficients
+# to detect monotonic but nonlinear relationships
+var.cluster <- Hmisc::varclus(~., data = dat_17_select[c(
+    "fall",
+    "gender",
+    "education",
+    "language",
+    "urban_rural",
+    "nationality",
+    "smoke",
+    "FL",
+    "bmi_cut",
+    "bmi",
+    "age_cut",
+    "age",
+    "SHS",
+    "diabetes",
+    "osteoarthritis",
+    "heart_attack",
+    "stroke",
+    "urinary_incontinence",
+    "osteoporosis",
+    "activity",
+    "alcohol")])
+# var.cluster
+plot(var.cluster, abbrev=FALSE, cex = 0.8)
+```
+
+### Boxplots
+
+```{r warning=FALSE}
+# Visualize the distribution of all continuous features based on fall with a boxplot
+DataExplorer::plot_boxplot(dat_17_select, by = "fall")
+```
+
+### Control of the dataframe size, i.e. extent of missing values
+
+```{r message=FALSE, warning=FALSE}
+
+dat_17_select_fall <- select(dat_17, variable_names_fall) # create dataset without fall_count variable
+dat_17_select_fall_count <- select(dat_17, variable_names_fall_count) # create dataset without fall variable
+
+dat_17_select_no_missing_fall <- as.data.frame(na.omit(dat_17_select_fall))
+dat_17_select_no_missing_fall_count <- as.data.frame(na.omit(dat_17_select_fall_count))
+
+dim(dat_17_select) # all variables with missings
+dim(dat_17_select_fall) # all variables fall dataset
+dim(dat_17_select_fall_count) # all variables count_fall dataset
+dim(dat_17_select_no_missing_fall) # without missings fall dataset
+dim(dat_17_select_no_missing_fall_count) # without missings fall_count dataset; Lot of missings are due to no questioning if no fall has happened.
+```
+
+# Surveydesign
+
+## Creating/subset (weighted) survey.design-object
+
+-   (*year, sex)*
+
+```{r}
+wdat<-svydesign(id = ~idno, strata = ~kanton, weights = ~wght, nest = T, data = dat)
+wdat_07<-svydesign(id = ~idno, strata = ~kanton, weights = ~wght, nest = T, data = dat_07)
+wdat_12<-svydesign(id = ~idno, strata = ~kanton, weights = ~wght, nest = T, data = dat_12)
+wdat_17<-svydesign(id = ~idno, strata = ~kanton, weights = ~wght, nest = T, data = dat_17)
+wdat_17_m <- subset(wdat_17, gender =="man")
+wdat_17_f <- subset(wdat_17, gender == "woman")
+```
+
+## Variable selection
+
+-   Same as previous in the (unweighted) dataset
+
+# Summary weighted statistics
+
+## Falls by sex SHIS 2007, 2012, **2017**
+
+```{r}
+fall_year_gender_svy <- svyby(formula = ~fall, 
+      by = ~intjahr + gender, 
+      design = wdat, 
+      FUN = svymean, 
+      na.rm = TRUE, 
+      keep.names = FALSE)
+# datatable(fall_year_gender_svy, filter = 'top')
+dodge <- position_dodge(width=0.9)
+
+fall_year_gender_svy_1<-ggplot(data = fall_year_gender_svy, mapping = aes(x = factor(intjahr), y = `fallfall last 12 months`, ymin = `fallfall last 12 months`-(2*`se.fallfall last 12 months`), ymax = `fallfall last 12 months`+(2*`se.fallfall last 12 months`), fill = gender)) +
+   geom_bar(position="dodge", stat="identity") + 
+   labs(y =  "Prop_fall", x = "Year") + 
+   geom_errorbar(width = 0.2, size = 3, position = dodge) + labs(fill = "Gender")
+fall_year_gender_svy_2<-fall_year_gender_svy_1 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplotly(fall_year_gender_svy_2)
+```
+
+## Table 1 {.tabset}
+
+The following steps are used to create *Table 1* of the publication.
+
+For each variable of interest, the number of respondents in each group, the (weighted) percentages of the population in each group and the (weighted) percentages of the population with the outcome of interest per group were calculated separatly for men and women. For all weighted confidence intervals for proportions, the Rao-Scott method was used [@rao1984]. Since it uses a scaled chi-squared distribution for the log-likelihood from a binomial distribution, it can be more accurate near 0 and 1. For this purpose, the function [`svyciprop()`](https://www.rdocumentation.org/packages/survey/versions/4.1-1/topics/svyciprop) from the package [survey](http://cran.fhcrc.org/web/packages/survey/index.html) by Thomas Lumley was used [@lumley2010].
+
+### Summary row total
+
+```{r}
+options(width = 500)
+Row_1<-svyCreateTableOne(vars = "fall", data = wdat_17, includeNA = TRUE)
+print(Row_1, showAllLevels = TRUE, includeNA = TRUE, contDigit = 1)
+```
+
+### Summary row total men & women
+
+```{r}
+# total fall
+Row_1_CI_fall<- svyciprop(formula = ~I(fall == "fall last 12 months"),
+          design = wdat_17,
+          na.rm = TRUE,
+          method = "li")
+Row_1_CI_fall
+
+# total woman
+Row_1_CI_woman<- svyciprop(formula = ~I(gender == "woman"),
+          design = wdat_17,
+          na.rm = TRUE,
+          method = "li")
+Row_1_CI_woman
+
+# total man
+Row_1_CI_man<- svyciprop(formula = ~I(gender == "man"),
+          design = wdat_17,
+          na.rm = TRUE,
+          method = "li")
+Row_1_CI_man
+
+# Proportion fall % (CI 95) by gender
+tab_amount_fall_tot_gender <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ gender,
+  design = wdat_17,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_tot_gender
+```
+
+### Summary (unweighted) sample (*n*)
+
+```{r}
+options(width = 500)
+
+sample_size_gender<- tableone::CreateTableOne(data = dat_17_select, strata = "gender", includeNA = TRUE)
+sample_size_gendera<-print(sample_size_gender, showAllLevels = TRUE, includeNA = TRUE, contDigit = 0)
+# To export to Excel-format
+# write.csv2(sample_size_gendera, "sample_size.csv")
+```
+
+### Summary (weighted) population (N) for men & women
+
+-   to get the missing values (NA):
+
+```{r}
+Row_2_NA<-svyCreateTableOne(vars = c(variable_names), strata = "gender", data = wdat_17, includeNA = TRUE, test = TRUE) # with NA
+Row_2_NAa<- print(Row_2_NA, showAllLevels = TRUE, includeNA = TRUE, contDigit = 0)
+# To export to Excel-format
+# write.csv2(Row_2_NAa, file = "Row_2NA.csv")
+```
+
+-   to get the t-test mean of weighted characteristics men vs. women:
+
+```{r}
+Row_2<-svyCreateTableOne(vars = c(variable_names), strata = "gender", data = wdat_17, includeNA = FALSE, test = TRUE) # without NA and t-test gender
+Row_2a<-print(Row_2, showAllLevels = TRUE, includeNA = FALSE, contDigit = 0)
+# To export to Excel-format
+# write.csv2(Row_2a, file = "Row_2.csv")
+```
+
+### Summary proportion (%) and confidence interval (CI 95%) of population (weighted number of people) by characteristic
+
+#### Men
+
+```{r}
+# men
+# education
+Row_4_compulsory_education_m<- svyciprop(formula = ~I(education == "compulsory education"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_compulsory_education_m*100)[1]
+Row_4_compulsory_education_m_CI = attr(Row_4_compulsory_education_m,"ci")
+Row_4_compulsory_education_m_CI*100
+
+Row_4_upper_secondary_education_m <- svyciprop(formula = ~I(education == "upper secondary education"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_upper_secondary_education_m*100)[1]
+Row_4_upper_secondary_education_m_CI = attr(Row_4_upper_secondary_education_m,"ci")
+Row_4_upper_secondary_education_m_CI*100
+
+Row_4_tertiary_education_m <- svyciprop(formula = ~I(education == "tertiary education"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_tertiary_education_m*100)[1]
+Row_4_tertiary_education_m_CI = attr(Row_4_tertiary_education_m,"ci")
+Row_4_tertiary_education_m_CI*100
+
+# language
+Row_4_german_m<- svyciprop(formula = ~I(language == "german"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_german_m*100)[1]
+Row_4_german_m_CI = attr(Row_4_german_m,"ci")
+Row_4_german_m_CI*100
+
+Row_4_french_m <- svyciprop(formula = ~I(language == "french"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_french_m*100)[1]
+Row_4_french_m_CI = attr(Row_4_french_m,"ci")
+Row_4_french_m_CI*100
+
+Row_4_italian_m <- svyciprop(formula = ~I(language == "italian"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_italian_m*100)[1]
+Row_4_italian_m_CI = attr(Row_4_italian_m,"ci")
+Row_4_italian_m_CI*100
+
+# urban_rural
+Row_4_urban_area_m<- svyciprop(formula = ~I(urban_rural == "urban area"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urban_area_m*100)[1]
+Row_4_urban_area_m_CI = attr(Row_4_urban_area_m,"ci")
+Row_4_urban_area_m_CI*100
+
+Row_4_rural_arean_m <- svyciprop(formula = ~I(urban_rural == "rural area"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_rural_arean_m*100)[1]
+Row_4_rural_arean_m_CI = attr(Row_4_rural_arean_m,"ci")
+Row_4_rural_arean_m_CI*100
+
+# nationality
+Row_4_swiss_m<- svyciprop(formula = ~I(nationality == "swiss"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_swiss_m*100)[1]
+Row_4_swiss_m_CI = attr(Row_4_swiss_m,"ci")
+Row_4_swiss_m_CI*100
+
+Row_4_foreigner_m <- svyciprop(formula = ~I(nationality == "foreigner"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_foreigner_m*100)[1]
+Row_4_foreigner_m_CI = attr(Row_4_foreigner_m,"ci")
+Row_4_foreigner_m_CI*100
+
+# smoke              
+Row_4_no_smoker_m<- svyciprop(formula = ~I(smoke == "no smoker"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_no_smoker_m*100)[1]
+Row_4_no_smoker_m_CI = attr(Row_4_no_smoker_m,"ci")
+Row_4_no_smoker_m_CI*100
+
+Row_4_former_smoker_m <- svyciprop(formula = ~I(smoke == "former smoker"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_former_smoker_m*100)[1]
+Row_4_former_smoker_m_CI = attr(Row_4_former_smoker_m,"ci")
+Row_4_former_smoker_m_CI*100
+
+Row_4_smoker_m <- svyciprop(formula = ~I(smoke == "smoker"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_smoker_m*100)[1]
+Row_4_smoker_m_CI = attr(Row_4_smoker_m,"ci")
+Row_4_smoker_m_CI*100
+
+# FL
+Row_4_FL_no_difficulty_m<- svyciprop(formula = ~I(FL == "No difficulty"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_no_difficulty_m*100)[1]
+Row_4_FL_no_difficulty_m_CI = attr(Row_4_FL_no_difficulty_m,"ci")
+Row_4_FL_no_difficulty_m_CI*100
+
+Row_4_FL_slight_difficulty_m <- svyciprop(formula = ~I(FL == "Slight difficulty"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_slight_difficulty_m*100)[1]
+Row_4_FL_slight_difficulty_m_CI = attr(Row_4_FL_slight_difficulty_m,"ci")
+Row_4_FL_slight_difficulty_m_CI*100
+
+Row_4_FL_great_difficulty_m<- svyciprop(formula = ~I(FL == "Great difficulty"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_great_difficulty_m*100)[1]
+Row_4_FL_great_difficulty_m_CI = attr(Row_4_FL_great_difficulty_m,"ci")
+Row_4_FL_great_difficulty_m_CI*100
+
+Row_4_FL_inability_m<- svyciprop(formula = ~I(FL == "Inability"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_inability_m*100)[1]
+Row_4_FL_inability_m_CI = attr(Row_4_FL_inability_m,"ci")
+Row_4_FL_inability_m_CI*100
+
+# bmi_cut
+Row_4_normal_weight_m<- svyciprop(formula = ~I(bmi_cut == "normal weight"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_normal_weight_m*100)[1]
+Row_4_normal_weight_m_CI = attr(Row_4_normal_weight_m,"ci")
+Row_4_normal_weight_m_CI*100
+
+Row_4_obesity_m <- svyciprop(formula = ~I(bmi_cut == "obesity"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_obesity_m*100)[1]
+Row_4_obesity_m_CI = attr(Row_4_obesity_m,"ci")
+Row_4_obesity_m_CI*100
+
+Row_4_overweight_m<- svyciprop(formula = ~I(bmi_cut == "overweight"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_overweight_m*100)[1]
+Row_4_overweight_m_CI = attr(Row_4_overweight_m,"ci")
+Row_4_overweight_m_CI*100
+
+Row_4_underweight_m <- svyciprop(formula = ~I(bmi_cut == "underweight"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_underweight_m*100)[1]
+Row_4_underweight_m_CI = attr(Row_4_underweight_m,"ci")
+Row_4_underweight_m_CI*100
+
+# age_cut
+Row_4_age_cut_60to64_m<- svyciprop(formula = ~I(age_cut == "60-69"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_60to64_m*100)[1]
+Row_4_age_cut_60to64_m_CI = attr(Row_4_age_cut_60to64_m,"ci")
+Row_4_age_cut_60to64_m_CI*100
+
+Row_4_age_cut_65to74_m <- svyciprop(formula = ~I(age_cut == "70-79"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_65to74_m*100)[1]
+Row_4_age_cut_65to74_m_CI = attr(Row_4_age_cut_65to74_m,"ci")
+Row_4_age_cut_65to74_m_CI*100
+
+Row_4_age_cut_75_m<- svyciprop(formula = ~I(age_cut == "80+"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_75_m*100)[1]
+Row_4_age_cut_75_m_CI = attr(Row_4_age_cut_75_m,"ci")
+Row_4_age_cut_75_m_CI*100
+
+# SHS     
+Row_4_SHS_very_good_m<- svyciprop(formula = ~I(SHS == "very good"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_very_good_m*100)[1]
+Row_4_SHS_very_good_m_CI = attr(Row_4_SHS_very_good_m,"ci")
+Row_4_SHS_very_good_m_CI*100
+
+Row_4_SHS_good_m<- svyciprop(formula = ~I(SHS == "good"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_good_m*100)[1]
+Row_4_SHS_good_m_CI = attr(Row_4_SHS_good_m,"ci")
+Row_4_SHS_good_m_CI*100
+
+Row_4_SHS_average_m <- svyciprop(formula = ~I(SHS == "average"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_average_m*100)[1]
+Row_4_SHS_average_m_CI = attr(Row_4_SHS_average_m,"ci")
+Row_4_SHS_average_m_CI*100
+
+Row_4_SHS_poor_m<- svyciprop(formula = ~I(SHS == "poor"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_poor_m*100)[1]
+Row_4_SHS_poor_m_CI = attr(Row_4_SHS_poor_m,"ci")
+Row_4_SHS_poor_m_CI*100
+
+Row_4_SHS_very_poor_m<- svyciprop(formula = ~I(SHS == "very poor"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_very_poor_m*100)[1]
+Row_4_SHS_very_poor_m_CI = attr(Row_4_SHS_very_poor_m,"ci")
+Row_4_SHS_very_poor_m_CI*100
+
+# diabetes
+Row_4_diabetes_yes_m<- svyciprop(formula = ~I(diabetes == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_diabetes_yes_m*100)[1]
+Row_4_diabetes_yes_m_CI = attr(Row_4_diabetes_yes_m,"ci")
+Row_4_diabetes_yes_m_CI*100
+
+Row_4_diabetes_no_m <- svyciprop(formula = ~I(diabetes == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_diabetes_no_m*100)[1]
+Row_4_diabetes_no_m_CI = attr(Row_4_diabetes_no_m,"ci")
+Row_4_diabetes_no_m_CI*100
+
+# osteoarthritis
+Row_4_osteoarthritis_yes_m<- svyciprop(formula = ~I(osteoarthritis == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoarthritis_yes_m*100)[1]
+Row_4_osteoarthritis_yes_m_CI = attr(Row_4_osteoarthritis_yes_m,"ci")
+Row_4_osteoarthritis_yes_m_CI*100
+
+Row_4_osteoarthritis_no_m <- svyciprop(formula = ~I(osteoarthritis == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoarthritis_no_m*100)[1]
+Row_4_osteoarthritis_no_m_CI = attr(Row_4_osteoarthritis_no_m,"ci")
+Row_4_osteoarthritis_no_m_CI*100
+
+# heart_attack
+Row_4_heart_attack_yes_m<- svyciprop(formula = ~I(heart_attack == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_heart_attack_yes_m*100)[1]
+Row_4_heart_attack_yes_m_CI = attr(Row_4_heart_attack_yes_m,"ci")
+Row_4_heart_attack_yes_m_CI*100
+
+Row_4_heart_attack_no_m <- svyciprop(formula = ~I(heart_attack == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_heart_attack_no_m*100)[1]
+Row_4_heart_attack_no_m_CI = attr(Row_4_heart_attack_no_m,"ci")
+Row_4_heart_attack_no_m_CI*100
+
+# stroke
+Row_4_stroke_yes_m<- svyciprop(formula = ~I(stroke == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_stroke_yes_m*100)[1]
+Row_4_stroke_yes_m_CI = attr(Row_4_stroke_yes_m,"ci")
+Row_4_stroke_yes_m_CI*100
+
+Row_4_stroke_no_m <- svyciprop(formula = ~I(stroke == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_stroke_no_m*100)[1]
+Row_4_stroke_no_m_CI = attr(Row_4_stroke_no_m,"ci")
+Row_4_stroke_no_m_CI*100
+
+# urinary_incontinence
+Row_4_urinary_incontinence_yes_m<- svyciprop(formula = ~I(urinary_incontinence == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urinary_incontinence_yes_m*100)[1]
+Row_4_urinary_incontinence_yes_m_CI = attr(Row_4_urinary_incontinence_yes_m,"ci")
+Row_4_urinary_incontinence_yes_m_CI*100
+
+Row_4_urinary_incontinence_no_m <- svyciprop(formula = ~I(urinary_incontinence == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urinary_incontinence_no_m*100)[1]
+Row_4_urinary_incontinence_no_m_CI = attr(Row_4_urinary_incontinence_no_m,"ci")
+Row_4_urinary_incontinence_no_m_CI*100
+
+# osteoporosis
+Row_4_osteoporosis_yes_m<- svyciprop(formula = ~I(osteoporosis == "yes"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoporosis_yes_m*100)[1]
+Row_4_osteoporosis_yes_m_CI = attr(Row_4_osteoporosis_yes_m,"ci")
+Row_4_osteoporosis_yes_m_CI*100
+
+Row_4_osteoporosis_no_m <- svyciprop(formula = ~I(osteoporosis == "no"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoporosis_no_m*100)[1]
+Row_4_osteoporosis_no_m_CI = attr(Row_4_osteoporosis_no_m,"ci")
+Row_4_osteoporosis_no_m_CI*100
+
+# activity
+Row_4_inactive_m<- svyciprop(formula = ~I(activity == "inactive"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_inactive_m*100)[1]
+Row_4_inactive_m_CI = attr(Row_4_inactive_m,"ci")
+Row_4_inactive_m_CI*100
+
+Row_4_partially_active_m <- svyciprop(formula = ~I(activity == "partially active"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_partially_active_m*100)[1]
+Row_4_partially_active_m_CI = attr(Row_4_partially_active_m,"ci")
+Row_4_partially_active_m_CI*100
+
+Row_4_active_m<- svyciprop(formula = ~I(activity == "active"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_active_m*100)[1]
+Row_4_active_m_CI = attr(Row_4_active_m,"ci")
+Row_4_active_m_CI*100
+
+
+# alcohol
+Row_4_alcohol_abstinent_m<- svyciprop(formula = ~I(alcohol == "abstinent"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_abstinent_m*100)[1]
+Row_4_alcohol_abstinent_m_CI = attr(Row_4_alcohol_abstinent_m,"ci")
+Row_4_alcohol_abstinent_m_CI*100
+
+Row_4_alcohol_low_risk_m<- svyciprop(formula = ~I(alcohol == "low risk"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_low_risk_m*100)[1]
+Row_4_alcohol_low_risk_m_CI = attr(Row_4_alcohol_low_risk_m,"ci")
+Row_4_alcohol_low_risk_m_CI*100
+
+Row_4_alcohol_moderate_or_increased_risk_m<- svyciprop(formula = ~I(alcohol == "moderate or increased risk"),
+          design = wdat_17_m,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_moderate_or_increased_risk_m*100)[1]
+Row_4_alcohol_moderate_or_increased_risk_m_CI = attr(Row_4_alcohol_moderate_or_increased_risk_m,"ci")
+Row_4_alcohol_moderate_or_increased_risk_m_CI*100
+```
+
+#### Women
+
+```{r}
+# women
+## education
+Row_4_compulsory_education_f<- svyciprop(formula = ~I(education == "compulsory education"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_compulsory_education_f*100)[1]
+Row_4_compulsory_education_f_CI = attr(Row_4_compulsory_education_f,"ci")
+Row_4_compulsory_education_f_CI*100
+
+Row_4_upper_secondary_education_f <- svyciprop(formula = ~I(education == "upper secondary education"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_upper_secondary_education_f*100)[1]
+Row_4_upper_secondary_education_f_CI = attr(Row_4_upper_secondary_education_f,"ci")
+Row_4_upper_secondary_education_f_CI*100
+
+Row_4_tertiary_education_f <- svyciprop(formula = ~I(education == "tertiary education"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_tertiary_education_f*100)[1]
+Row_4_tertiary_education_f_CI = attr(Row_4_tertiary_education_f,"ci")
+Row_4_tertiary_education_f_CI*100
+
+# language
+Row_4_german_f<- svyciprop(formula = ~I(language == "german"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_german_f*100)[1]
+Row_4_german_f_CI = attr(Row_4_german_f,"ci")
+Row_4_german_f_CI*100
+
+Row_4_french_f <- svyciprop(formula = ~I(language == "french"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_french_f*100)[1]
+Row_4_french_f_CI = attr(Row_4_french_f,"ci")
+Row_4_french_f_CI*100
+
+Row_4_italian_f <- svyciprop(formula = ~I(language == "italian"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_italian_f*100)[1]
+Row_4_italian_f_CI = attr(Row_4_italian_f,"ci")
+Row_4_italian_f_CI*100
+
+# urban_rural
+Row_4_urban_area_f<- svyciprop(formula = ~I(urban_rural == "urban area"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urban_area_f*100)[1]
+Row_4_urban_area_f_CI = attr(Row_4_urban_area_f,"ci")
+Row_4_urban_area_f_CI*100
+
+Row_4_rural_arean_f <- svyciprop(formula = ~I(urban_rural == "rural area"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_rural_arean_f*100)[1]
+Row_4_rural_arean_f_CI = attr(Row_4_rural_arean_f,"ci")
+Row_4_rural_arean_f_CI*100
+
+# nationality
+Row_4_swiss_f<- svyciprop(formula = ~I(nationality == "swiss"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_swiss_f*100)[1]
+Row_4_swiss_f_CI = attr(Row_4_swiss_f,"ci")
+Row_4_swiss_f_CI*100
+
+Row_4_foreigner_f <- svyciprop(formula = ~I(nationality == "foreigner"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_foreigner_f*100)[1]
+Row_4_foreigner_f_CI = attr(Row_4_foreigner_f,"ci")
+Row_4_foreigner_f_CI*100
+
+# smoke              
+Row_4_no_smoker_f<- svyciprop(formula = ~I(smoke == "no smoker"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_no_smoker_f*100)[1]
+Row_4_no_smoker_f_CI = attr(Row_4_no_smoker_f,"ci")
+Row_4_no_smoker_f_CI*100
+
+Row_4_former_smoker_f <- svyciprop(formula = ~I(smoke == "former smoker"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_former_smoker_f*100)[1]
+Row_4_former_smoker_f_CI = attr(Row_4_former_smoker_f,"ci")
+Row_4_former_smoker_f_CI*100
+
+Row_4_smoker_f <- svyciprop(formula = ~I(smoke == "smoker"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_smoker_f*100)[1]
+Row_4_smoker_f_CI = attr(Row_4_smoker_f,"ci")
+Row_4_smoker_f_CI*100
+
+# FL
+Row_4_FL_no_difficulty_f<- svyciprop(formula = ~I(FL == "No difficulty"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_no_difficulty_f*100)[1]
+Row_4_FL_no_difficulty_f_CI = attr(Row_4_FL_no_difficulty_f,"ci")
+Row_4_FL_no_difficulty_f_CI*100
+
+Row_4_FL_slight_difficulty_f <- svyciprop(formula = ~I(FL == "Slight difficulty"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_slight_difficulty_f*100)[1]
+Row_4_FL_slight_difficulty_f_CI = attr(Row_4_FL_slight_difficulty_f,"ci")
+Row_4_FL_slight_difficulty_f_CI*100
+
+Row_4_FL_great_difficulty_f<- svyciprop(formula = ~I(FL == "Great difficulty"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_great_difficulty_f*100)[1]
+Row_4_FL_great_difficulty_f_CI = attr(Row_4_FL_great_difficulty_f,"ci")
+Row_4_FL_great_difficulty_f_CI*100
+
+Row_4_FL_inability_f<- svyciprop(formula = ~I(FL == "Inability"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_FL_inability_f*100)[1]
+Row_4_FL_inability_f_CI = attr(Row_4_FL_inability_f,"ci")
+Row_4_FL_inability_f_CI*100
+
+# bmi_cut
+Row_4_normal_weight_f<- svyciprop(formula = ~I(bmi_cut == "normal weight"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_normal_weight_f*100)[1]
+Row_4_normal_weight_f_CI = attr(Row_4_normal_weight_f,"ci")
+Row_4_normal_weight_f_CI*100
+
+Row_4_obesity_f <- svyciprop(formula = ~I(bmi_cut == "obesity"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_obesity_f*100)[1]
+Row_4_obesity_f_CI = attr(Row_4_obesity_f,"ci")
+Row_4_obesity_f_CI*100
+
+Row_4_overweight_f<- svyciprop(formula = ~I(bmi_cut == "overweight"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_overweight_f*100)[1]
+Row_4_overweight_f_CI = attr(Row_4_overweight_f,"ci")
+Row_4_overweight_f_CI*100
+
+Row_4_underweight_f <- svyciprop(formula = ~I(bmi_cut == "underweight"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_underweight_f*100)[1]
+Row_4_underweight_f_CI = attr(Row_4_underweight_f,"ci")
+Row_4_underweight_f_CI*100
+
+# age_cut
+Row_4_age_cut_60to64_f<- svyciprop(formula = ~I(age_cut == "60-69"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_60to64_f*100)[1]
+Row_4_age_cut_60to64_f_CI = attr(Row_4_age_cut_60to64_f,"ci")
+Row_4_age_cut_60to64_f_CI*100
+
+Row_4_age_cut_65to74_f <- svyciprop(formula = ~I(age_cut == "70-79"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_65to74_f*100)[1]
+Row_4_age_cut_65to74_f_CI = attr(Row_4_age_cut_65to74_f,"ci")
+Row_4_age_cut_65to74_f_CI*100
+
+Row_4_age_cut_75_f<- svyciprop(formula = ~I(age_cut == "80+"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_age_cut_75_f*100)[1]
+Row_4_age_cut_75_f_CI = attr(Row_4_age_cut_75_f,"ci")
+Row_4_age_cut_75_f_CI*100
+
+# SHS     
+Row_4_SHS_very_good_f<- svyciprop(formula = ~I(SHS == "very good"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_very_good_f*100)[1]
+Row_4_SHS_very_good_f_CI = attr(Row_4_SHS_very_good_f,"ci")
+Row_4_SHS_very_good_f_CI*100
+
+Row_4_SHS_good_f<- svyciprop(formula = ~I(SHS == "good"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_good_f*100)[1]
+Row_4_SHS_good_f_CI = attr(Row_4_SHS_good_f,"ci")
+Row_4_SHS_good_f_CI*100
+
+Row_4_SHS_average_f <- svyciprop(formula = ~I(SHS == "average"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_average_f*100)[1]
+Row_4_SHS_average_f_CI = attr(Row_4_SHS_average_f,"ci")
+Row_4_SHS_average_f_CI*100
+
+Row_4_SHS_poor_f<- svyciprop(formula = ~I(SHS == "poor"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_poor_f*100)[1]
+Row_4_SHS_poor_f_CI = attr(Row_4_SHS_poor_f,"ci")
+Row_4_SHS_poor_f_CI*100
+
+Row_4_SHS_very_poor_f<- svyciprop(formula = ~I(SHS == "very poor"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_SHS_very_poor_f*100)[1]
+Row_4_SHS_very_poor_f_CI = attr(Row_4_SHS_very_poor_f,"ci")
+Row_4_SHS_very_poor_f_CI*100
+
+# diabetes
+Row_4_diabetes_yes_f<- svyciprop(formula = ~I(diabetes == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_diabetes_yes_f*100)[1]
+Row_4_diabetes_yes_f_CI = attr(Row_4_diabetes_yes_f,"ci")
+Row_4_diabetes_yes_f_CI*100
+
+Row_4_diabetes_no_f <- svyciprop(formula = ~I(diabetes == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_diabetes_no_f*100)[1]
+Row_4_diabetes_no_f_CI = attr(Row_4_diabetes_no_f,"ci")
+Row_4_diabetes_no_f_CI*100
+
+# osteoarthritis
+Row_4_osteoarthritis_yes_f<- svyciprop(formula = ~I(osteoarthritis == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoarthritis_yes_f*100)[1]
+Row_4_osteoarthritis_yes_f_CI = attr(Row_4_osteoarthritis_yes_f,"ci")
+Row_4_osteoarthritis_yes_f_CI*100
+
+Row_4_osteoarthritis_no_f <- svyciprop(formula = ~I(osteoarthritis == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoarthritis_no_f*100)[1]
+Row_4_osteoarthritis_no_f_CI = attr(Row_4_osteoarthritis_no_f,"ci")
+Row_4_osteoarthritis_no_f_CI*100
+
+# heart_attack
+Row_4_heart_attack_yes_f<- svyciprop(formula = ~I(heart_attack == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_heart_attack_yes_f*100)[1]
+Row_4_heart_attack_yes_f_CI = attr(Row_4_heart_attack_yes_f,"ci")
+Row_4_heart_attack_yes_f_CI*100
+
+Row_4_heart_attack_no_f <- svyciprop(formula = ~I(heart_attack == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_heart_attack_no_f*100)[1]
+Row_4_heart_attack_no_f_CI = attr(Row_4_heart_attack_no_f,"ci")
+Row_4_heart_attack_no_f_CI*100
+
+# stroke
+Row_4_stroke_yes_f<- svyciprop(formula = ~I(stroke == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_stroke_yes_f*100)[1]
+Row_4_stroke_yes_f_CI = attr(Row_4_stroke_yes_f,"ci")
+Row_4_stroke_yes_f_CI*100
+
+Row_4_stroke_no_f <- svyciprop(formula = ~I(stroke == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_stroke_no_f*100)[1]
+Row_4_stroke_no_f_CI = attr(Row_4_stroke_no_f,"ci")
+Row_4_stroke_no_f_CI*100
+
+# urinary_incontinence
+Row_4_urinary_incontinence_yes_f<- svyciprop(formula = ~I(urinary_incontinence == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urinary_incontinence_yes_f*100)[1]
+Row_4_urinary_incontinence_yes_f_CI = attr(Row_4_urinary_incontinence_yes_f,"ci")
+Row_4_urinary_incontinence_yes_f_CI*100
+
+Row_4_urinary_incontinence_no_f <- svyciprop(formula = ~I(urinary_incontinence == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_urinary_incontinence_no_f*100)[1]
+Row_4_urinary_incontinence_no_f_CI = attr(Row_4_urinary_incontinence_no_f,"ci")
+Row_4_urinary_incontinence_no_f_CI*100
+
+# osteoporosis
+Row_4_osteoporosis_yes_f<- svyciprop(formula = ~I(osteoporosis == "yes"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoporosis_yes_f*100)[1]
+Row_4_osteoporosis_yes_f_CI = attr(Row_4_osteoporosis_yes_f,"ci")
+Row_4_osteoporosis_yes_f_CI*100
+
+Row_4_osteoporosis_no_f <- svyciprop(formula = ~I(osteoporosis == "no"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_osteoporosis_no_f*100)[1]
+Row_4_osteoporosis_no_f_CI = attr(Row_4_osteoporosis_no_f,"ci")
+Row_4_osteoporosis_no_f_CI*100
+
+# activity
+Row_4_inactive_f<- svyciprop(formula = ~I(activity == "inactive"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_inactive_f*100)[1]
+Row_4_inactive_f_CI = attr(Row_4_inactive_f,"ci")
+Row_4_inactive_f_CI*100
+
+Row_4_partially_active_f <- svyciprop(formula = ~I(activity == "partially active"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_partially_active_f*100)[1]
+Row_4_partially_active_f_CI = attr(Row_4_partially_active_f,"ci")
+Row_4_partially_active_f_CI*100
+
+Row_4_active_f<- svyciprop(formula = ~I(activity == "active"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_active_f*100)[1]
+Row_4_active_f_CI = attr(Row_4_active_f,"ci")
+Row_4_active_f_CI*100
+
+
+# alcohol
+Row_4_alcohol_abstinent_f<- svyciprop(formula = ~I(alcohol == "abstinent"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_abstinent_f*100)[1]
+Row_4_alcohol_abstinent_f_CI = attr(Row_4_alcohol_abstinent_f,"ci")
+Row_4_alcohol_abstinent_f_CI*100
+
+Row_4_alcohol_low_risk_f<- svyciprop(formula = ~I(alcohol == "low risk"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_low_risk_f*100)[1]
+Row_4_alcohol_low_risk_f_CI = attr(Row_4_alcohol_low_risk_f,"ci")
+Row_4_alcohol_low_risk_f_CI*100
+
+Row_4_alcohol_moderate_or_increased_risk_f<- svyciprop(formula = ~I(alcohol == "moderate or increased risk"),
+          design = wdat_17_f,
+          na.rm = TRUE,
+          method = "li")
+(Row_4_alcohol_moderate_or_increased_risk_f*100)[1]
+Row_4_alcohol_moderate_or_increased_risk_f_CI = attr(Row_4_alcohol_moderate_or_increased_risk_f,"ci")
+Row_4_alcohol_moderate_or_increased_risk_f_CI*100
+```
+
+### Summary proportion (%) and CI 95% of population with falls by characteristic
+
+#### Men
+
+```{r warning=FALSE}
+
+# men
+# education
+tab_amount_fall_education_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ education,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_education_m*100
+
+# language
+tab_amount_fall_language_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ language,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_language_m*100
+
+# urban_rural
+tab_amount_fall_urban_rural_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ urban_rural,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_urban_rural_m*100
+
+# nationality
+tab_amount_fall_nationality_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ nationality,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_nationality_m*100
+
+# smoke              
+tab_amount_fall_smoke_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ smoke,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_smoke_m*100
+
+# FL
+tab_amount_fall_FL_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ FL,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_FL_m*100
+
+# bmi_cut
+tab_amount_fall_bmi_cut_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ bmi_cut,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_bmi_cut_m*100
+
+# age_cut
+tab_amount_fall_age_cut_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ age_cut,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_age_cut_m*100
+
+# SHS     
+tab_amount_fall_SHS_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ SHS,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_SHS_m*100
+
+# diabetes
+tab_amount_fall_diabetes_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ diabetes,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_diabetes_m*100
+
+# osteoarthritis
+tab_amount_fall_osteoarthritis_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ osteoarthritis,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_osteoarthritis_m*100
+
+# heart_attack
+tab_amount_fall_heart_attack_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ heart_attack,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_heart_attack_m*100
+
+# stroke
+tab_amount_fall_stroke_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ stroke,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_stroke_m*100
+
+# urinary_incontinence
+tab_amount_fall_urinary_incontinence_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ urinary_incontinence,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_urinary_incontinence_m*100
+
+# osteoporosis
+tab_amount_fall_osteoporosis_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ osteoporosis,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_osteoporosis_m*100
+
+# activity
+tab_amount_fall_activity_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ activity,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_activity_m*100
+
+# alcohol
+tab_amount_fall_alcohol_m <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ alcohol,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_alcohol_m*100
+```
+
+#### Women
+
+```{r}
+# women
+# education
+tab_amount_fall_education_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ education,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_education_f*100
+
+# language
+tab_amount_fall_language_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ language,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_language_f*100
+
+# urban_rural
+tab_amount_fall_urban_rural_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ urban_rural,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_urban_rural_f*100
+
+# nationality
+tab_amount_fall_nationality_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ nationality,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_nationality_f*100
+
+# smoke              
+tab_amount_fall_smoke_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ smoke,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_smoke_f*100
+
+# FL
+tab_amount_fall_FL_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ FL,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_FL_f*100
+
+# bmi_cut
+tab_amount_fall_bmi_cut_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ bmi_cut,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_bmi_cut_f*100
+
+# age_cut
+tab_amount_fall_age_cut_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ age_cut,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_age_cut_f*100
+
+# SHS     
+tab_amount_fall_SHS_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ SHS,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_SHS_f*100
+
+# diabetes
+tab_amount_fall_diabetes_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ diabetes,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_diabetes_f*100
+
+# osteoarthritis
+tab_amount_fall_osteoarthritis_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ osteoarthritis,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_osteoarthritis_f*100
+
+# heart_attack
+tab_amount_fall_heart_attack_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ heart_attack,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_heart_attack_f*100
+
+# stroke
+tab_amount_fall_stroke_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ stroke,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_stroke_f*100
+
+# urinary_incontinence
+tab_amount_fall_urinary_incontinence_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ urinary_incontinence,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_urinary_incontinence_f*100
+
+# osteoporosis
+tab_amount_fall_osteoporosis_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ osteoporosis,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_osteoporosis_f*100
+
+# activity
+tab_amount_fall_activity_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ activity,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_activity_f*100
+
+# alcohol
+tab_amount_fall_alcohol_f <- svyby(
+  formula = ~I(fall == "fall last 12 months"),
+  by = ~ alcohol,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+tab_amount_fall_alcohol_f*100
+```
+
+### Summary intergroupdifference - test
+
+-   Intergroupdifference (Prop fall % by subset of groups)
+
+    -   $svychi^2-test$ $Pearson's\_x^2$ with Rao & Scott adjustment
+
+-   "`svychisq()` computes first and second-order Rao-Scott corrections to the Pearson chisquared test, and two Wald-type tests. The default (statistic="F") is the Rao-Scott second-order correction. The p-values are computed with a Satterthwaite approximation to the distribution. The alternative statistic="Chisq" adjusts the Pearson chisquared statistic by a design effect estimate and then compares it to the chisquared distribution it would have under simple random sampling" [@rao1984].
+
+![Here a description of Prof Thomas Lumley](svychi.PNG)
+
+-   Fall - Sex
+
+```{r}
+# men vs women
+survey::svychisq(~fall + gender, wdat_17)
+```
+
+#### Men
+
+```{r}
+# men
+
+# education
+survey::svychisq(~fall + education, wdat_17_m)
+# language
+survey::svychisq(~fall + language, wdat_17_m)
+# urban_rural
+survey::svychisq(~fall + urban_rural, wdat_17_m)
+# nationality
+survey::svychisq(~fall + nationality, wdat_17_m)
+# smoke
+survey::svychisq(~fall + smoke, wdat_17_m)
+# FL
+survey::svychisq(~fall + FL, wdat_17_m)
+# bmi_cut
+survey::svychisq(~fall + bmi_cut, wdat_17_m)
+# bmi
+# survey::svychisq(~fall + bmi, wdat_17_m)
+# age_cut
+survey::svychisq(~fall + age_cut, wdat_17_m)
+# age
+# survey::svychisq(~fall + age, wdat_17_m)
+# SHS
+survey::svychisq(~fall + SHS, wdat_17_m)
+# diabetes
+survey::svychisq(~fall + diabetes, wdat_17_m)
+# osteoarthritis
+survey::svychisq(~fall + osteoarthritis, wdat_17_m)
+# heart_attack
+survey::svychisq(~fall + heart_attack, wdat_17_m)
+# stroke
+survey::svychisq(~fall + stroke, wdat_17_m)
+# urinary_incontinence
+survey::svychisq(~fall + urinary_incontinence, wdat_17_m)
+# osteoporosis
+survey::svychisq(~fall + osteoporosis, wdat_17_m)
+# activity
+survey::svychisq(~fall + activity, wdat_17_m)
+# alcohol
+survey::svychisq(~fall + alcohol, wdat_17_m)
+```
+
+#### Women
+
+```{r}
+# women
+
+# education
+survey::svychisq(~fall + education, wdat_17_f)
+# language
+survey::svychisq(~fall + language, wdat_17_f)
+# urban_rural
+survey::svychisq(~fall + urban_rural, wdat_17_f)
+# nationality
+survey::svychisq(~fall + nationality, wdat_17_f)
+# smoke
+survey::svychisq(~fall + smoke, wdat_17_f)
+# FL
+survey::svychisq(~fall + FL, wdat_17_f)
+# bmi_cut
+survey::svychisq(~fall + bmi_cut, wdat_17_f)
+# bmi
+# survey::svychisq(~fall + bmi, wdat_17_f)
+# age_cut
+survey::svychisq(~fall + age_cut, wdat_17_f)
+# age
+# survey::svychisq(~fall + age, wdat_17_f)
+# SHS
+survey::svychisq(~fall + SHS, wdat_17_f)
+# diabetes
+survey::svychisq(~fall + diabetes, wdat_17_f)
+# osteoarthritis
+survey::svychisq(~fall + osteoarthritis, wdat_17_f)
+# heart_attack
+survey::svychisq(~fall + heart_attack, wdat_17_f)
+# stroke
+survey::svychisq(~fall + stroke, wdat_17_f)
+# urinary_incontinence
+survey::svychisq(~fall + urinary_incontinence, wdat_17_f)
+# osteoporosis
+survey::svychisq(~fall + osteoporosis, wdat_17_f)
+# activity
+survey::svychisq(~fall + activity, wdat_17_f)
+# alcohol
+survey::svychisq(~fall + alcohol, wdat_17_f)
 
 ```
 
-# Replace this with problem 4
+## Univariate models {.tabset}
 
-And keep going. Try to solve the problems with different scripts that provide the same solution. Good luck, Happy coding.
+Univariate logistic models separately for men and women.
+
+### Men
+
+```{r}
+# men
+
+# education
+uni_education_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ education,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_education_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_education_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_education_m")
+
+# language
+uni_language_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ language,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_language_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_language_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_language_m")
+
+# urban_rural
+uni_urban_rural_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ urban_rural,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_urban_rural_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_urban_rural_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_urban_rural_m")
+
+# nationality
+uni_nationality_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ nationality,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_nationality_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_nationality_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_nationality_m")
+
+# smoke
+uni_smoke_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ smoke,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_smoke_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_smoke_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_smoke_m")
+
+# FL
+uni_FL_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ FL,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_FL_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_FL_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_FL_m")
+
+# bmi_cut
+uni_bmi_cut_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ bmi_cut,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_bmi_cut_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_bmi_cut_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_bmi_cut_m")
+
+# bmi
+uni_bmi_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ bmi,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_bmi_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_bmi_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_bmi_m")
+
+# age_cut
+uni_age_cut_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ age_cut,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_age_cut_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_age_cut_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_age_cut_m")
+
+# age
+uni_age_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ age,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_age_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_age_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_age_m")
+
+# SHS     
+uni_SHS_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ SHS,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_SHS_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_SHS_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_SHS_m")
+
+# SHS_collapsed     
+uni_SHS_collapsed_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ SHS_collapsed,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_SHS_collapsed_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_SHS_collapsed_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_SHS_m")
+
+# diabetes
+uni_diabetes_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ diabetes,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_diabetes_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_diabetes_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_diabetes_m")
+
+# osteoarthritis
+uni_osteoarthritis_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ osteoarthritis,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_osteoarthritis_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_osteoarthritis_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_osteoarthritis_m")
+
+# heart_attack
+uni_heart_attack_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ heart_attack,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_heart_attack_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_heart_attack_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_heart_attack_m")
+
+# stroke
+uni_stroke_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ stroke,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_stroke_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_stroke_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_stroke_m")
+
+# urinary_incontinence
+uni_urinary_incontinence_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ urinary_incontinence,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_urinary_incontinence_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_urinary_incontinence_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_urinary_incontinence_m")
+
+# osteoporosis
+uni_osteoporosis_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ osteoporosis,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_osteoporosis_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_osteoporosis_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_osteoporosis_m")
+
+# activity
+uni_activity_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ activity,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_activity_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_activity_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_activity_m")
+
+# alcohol
+uni_alcohol_m <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ alcohol,
+    design = wdat_17_m,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_alcohol_m,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_alcohol_m, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_alcohol_m")
+```
+
+### Women
+
+```{r}
+# women
+
+# education
+uni_education_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ education,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_education_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_education_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_education_f")
+
+# language
+uni_language_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ language,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_language_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_language_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_language_f")
+
+# urban_rural
+uni_urban_rural_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ urban_rural,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_urban_rural_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_urban_rural_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_urban_rural_f")
+
+# nationality
+uni_nationality_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ nationality,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_nationality_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_nationality_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_nationality_f")
+
+# smoke
+uni_smoke_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ smoke,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_smoke_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_smoke_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_smoke_f")
+
+# FL
+uni_FL_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ FL,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_FL_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_FL_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_FL_f")
+
+# bmi_cut
+uni_bmi_cut_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ bmi_cut,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_bmi_cut_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_bmi_cut_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_bmi_cut_f")
+
+# bmi
+uni_bmi_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ bmi,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_bmi_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_bmi_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_bmi_f")
+
+# age_cut
+uni_age_cut_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ age_cut,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_age_cut_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_age_cut_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_age_cut_f")
+
+# age
+uni_age_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ age,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_age_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_age_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_age_f")
+
+# SHS     
+uni_SHS_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ SHS,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_SHS_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_SHS_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_SHS_f")
+
+# SHS_collapsed     
+uni_SHS_collapsed_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ SHS_collapsed,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_SHS_collapsed_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_SHS_collapsed_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_model_SHS_m")
+
+# diabetes
+uni_diabetes_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ diabetes,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_diabetes_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_diabetes_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_diabetes_f")
+
+# osteoarthritis
+uni_osteoarthritis_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ osteoarthritis,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_osteoarthritis_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_osteoarthritis_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_osteoarthritis_f")
+
+# heart_attack
+uni_heart_attack_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ heart_attack,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_heart_attack_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_heart_attack_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_heart_attack_f")
+
+# stroke
+uni_stroke_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ stroke,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_stroke_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_stroke_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_stroke_f")
+
+# urinary_incontinence
+uni_urinary_incontinence_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ urinary_incontinence,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_urinary_incontinence_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_urinary_incontinence_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_urinary_incontinence_f")
+
+# osteoporosis
+uni_osteoporosis_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ osteoporosis,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_osteoporosis_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_osteoporosis_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_osteoporosis_f")
+
+# activity
+uni_activity_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ activity,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_activity_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_activity_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_activity_f")
+
+# alcohol
+uni_alcohol_f <-
+  survey::svyglm(
+    I(fall=="fall last 12 months") ~ alcohol,
+    design = wdat_17_f,
+    family = quasibinomial(logit)
+  )
+jtools::summ(uni_alcohol_f,exp = TRUE, confint = TRUE, digits = 3)
+# jtools::plot_summs(uni_alcohol_f, exp = TRUE, colors = "Rainbow", legend.title = "unadjusted_fodel_alcohol_f")
+```
+
+```{r}
+jtools::summ(uni_FL_f, exp = TRUE, confint = TRUE, digits = 4)
+```
+
+## Trend test for prevalence of falls {.tabset}
+
+-   [CochranArmitageTest()](https://rdrr.io/cran/DescTools/man/CochranArmitageTest.html)
+-   [prop_trend_test()](https://rdrr.io/cran/rstatix/man/prop_trend_test.html)
+-   [prop.trend.test()](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/prop.trend.test)
+
+### Men
+
+After checking summary table, following variables get a trend test of prevalence of falls:
+
+-   education
+
+```{r}
+## CochranArmitageTest
+## creating matrix for education 
+camatrix_education_m <- matrix(c(0.1985768*119633, 0.2277108*441112, 0.2621775*360740, 0.8014232*119633, 0.7722892*441112, 0.7378225*360740), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, education=1:3))
+dimnames(camatrix_education_m) <- list(
+  fall = c("yes", "no"),
+  education = c("primary", "secondary", "tertiary")
+)
+camatrix_education_m
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_education_m)
+DescTools::CochranArmitageTest(camatrix_education_m, "increasing")
+DescTools::CochranArmitageTest(camatrix_education_m, "decreasing")
+
+## test with prop_trend_test function
+rstatix::prop_trend_test(camatrix_education_m)
+
+## test with prop.trend.test function
+fallers_education_m <- c(0.1985768*119633, 0.2277108*441112, 0.2621775*360740)
+nofallers_education_m <- c( 0.8014232*119633, 0.7722892*441112, 0.7378225*360740)
+prop.trend.test(fallers_education_m, nofallers_education_m)
+```
+
+-   age_cut
+
+```{r}
+## CochranArmitageTest
+## creating matrix for age_cut 
+camatrix_age_cut_m <- matrix(c(451660.1*0.2172215,329497.6*0.2402362, 143722.4*0.2899578, 0.7827785*451660.1, 0.7597638*329497.6, 0.7100422*143722.4), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, age_cut=1:3))
+dimnames(camatrix_age_cut_m) <- list(
+  fall = c("yes", "no"),
+  age_cut = c("60-69", "70-79", "80+")
+)
+camatrix_age_cut_m
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_age_cut_m)
+DescTools::CochranArmitageTest(camatrix_age_cut_m, "increasing")
+DescTools::CochranArmitageTest(camatrix_age_cut_m, "decreasing")
+```
+
+-   SHS
+
+```{r}
+## CochranArmitageTest
+## creating matrix for SHS 
+camatrix_SHS_m <- matrix(c(247212*0.220138, 441164*0.2346568, 174931*0.2463606, 46282*0.2947983, 13664*0.3119853, 0.779862*247212, 0.7653432*441164, 0.7536394*174931, 0.7052017*46282, 0.6880147*13664), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, SHS=1:5))
+dimnames(camatrix_SHS_m) <- list(
+  fall = c("yes", "no"),
+  SHS = c("very good", "good", "average", "poor", "very poor")
+)
+camatrix_SHS_m
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_SHS_m)
+DescTools::CochranArmitageTest(camatrix_SHS_m, "increasing")
+DescTools::CochranArmitageTest(camatrix_SHS_m, "decreasing")
+```
+
+### Women
+
+After checking summary table, following variables get a trend-test of prevalence of falls:
+
+-   FL
+
+```{r}
+## CochranArmitageTest
+## creating matrix for FL 
+camatrix_FL_f <- matrix(c(802495*0.2310017, 185432*0.3127858, 40791*0.3788652, 25971*0.3804728, 802495*0.7689983, 185432*0.6872142, 40791*0.6211348, 25971*0.6195272), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, FL=1:4))
+dimnames(camatrix_FL_f) <- list(
+  fall = c("yes", "no"),
+  FL = c("no difficulties", "slight difficulties", "great difficulties", "inability")
+)
+camatrix_FL_f
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_FL_f)
+DescTools::CochranArmitageTest(camatrix_FL_f, "increasing")
+DescTools::CochranArmitageTest(camatrix_FL_f, "decreasing")
+```
+
+-   age_cut
+
+```{r}
+## CochranArmitageTest
+## creating matrix for age_cut 
+camatrix_age_cut_f <- matrix(c(480788*0.2031848, 371311*0.2653584, 205226*0.3595031, 480788*0.7968152, 371311*0.7346416, 205226*0.6404969), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, age_cut=1:3))
+dimnames(camatrix_age_cut_f) <- list(
+  fall = c("yes", "no"),
+  age_cut = c("60-69", "70-79", "80+")
+)
+camatrix_age_cut_f
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_age_cut_f)
+DescTools::CochranArmitageTest(camatrix_age_cut_f, "increasing")
+DescTools::CochranArmitageTest(camatrix_age_cut_f, "decreasing")
+```
+
+-   SHS
+
+```{r}
+## CochranArmitageTest
+## creating matrix for SHS 
+camatrix_SHS_f <- matrix(c(281898*0.204541, 488526*0.2352557, 235279*0.3336065, 44700*0.3642046, 6819*0.4016408, 281898*0.795459, 488526*0.7647443, 235279*0.6663935, 44700*0.6357954, 6819*0.5983592), byrow=TRUE, nrow=2, dimnames=list(fall=0:1, SHS=1:5))
+dimnames(camatrix_SHS_f) <- list(
+  fall = c("yes", "no"),
+  SHS = c("very good", "good", "average", "poor", "very poor")
+)
+camatrix_SHS_f
+## test with CochranArmitageTest function
+DescTools::CochranArmitageTest(camatrix_SHS_f)
+DescTools::CochranArmitageTest(camatrix_SHS_f, "increasing")
+DescTools::CochranArmitageTest(camatrix_SHS_f, "decreasing")
+```
+
+## Multivariate models, model integration by covariate groups {.tabset}
+
+Multivariate logistic regression models were calculated for both men and women, characterised by the agglomerative inclusion of the `socio-demographic`, `biological` and `behavioural covariate groups`. In this way, three regression models result per gender.
+
+### Men
+
+-   `socio_economic_covariate` & `socio_demographic_covariate`:
+
+```{r}
+Model_socio_economic_socio_demographic_1_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language, 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_1_ma<- jtools::summ(Model_socio_economic_socio_demographic_1_m,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_1_ma
+```
+
+-   `socio_economic_covariate` & `socio_demographic_covariate` & `biological_covariates`:
+-   SHS-Variable factor: "very good and good" get combined
+
+```{r}
+Model_socio_economic_socio_demographic_biological_1_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis, 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_biological_1_ma<- jtools::summ(Model_socio_economic_socio_demographic_biological_1_m,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_biological_1_ma
+```
+
+-   `socio_economic_covariate` & `socio_demographic_covariate` & `biological_covariates` & `behavioral_covariate`:
+
+```{r}
+Model_socio_economic_socio_demographic_biological_behavioral_1_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke, 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_biological_behavioral_1_ma<- jtools::summ(Model_socio_economic_socio_demographic_biological_behavioral_1_m,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_biological_behavioral_1_ma
+```
+
+#### Model comparison male
+
+```{r message=FALSE, warning=FALSE}
+export_summs(Model_socio_economic_socio_demographic_1_m, Model_socio_economic_socio_demographic_biological_1_m, Model_socio_economic_socio_demographic_biological_behavioral_1_m, coefs = c("Secondary education" = "educationupper secondary education", "Tertiary education" = "educationtertiary education", "Rural area" = "urban_rural", "Foreigner" = "nationality", "French" = "languagefrench", "Italian" = "languageitalian", "70-79" = "age_cut70-79", "80+" = "age_cut80+", "Slight difficulty (FL)" = "FLSlight difficulty", "Great difficulty (FL)" = "FLGreat difficulty", "Inability (FL)" = "FLInability", "Obesity" = "bmi_cutobesity", "Overweight" = "bmi_cutoverweight", "Underweight" = "bmi_cutunderweight", "Average (SHS)" = "SHS_collapsedaverage", "Poor (SHS)" = "SHS_collapsedpoor", "Very poor (SHS)" = "SHS_collapsedvery poor", "Diabetes" = "diabetes", "Osteoarthritis" = "osteoarthritis", "Heart attack" = "heart_attack", "Stroke" = "stroke", "Urinary incontinence" = "urinary_incontinence", "Osteoporosis" = "osteoporosis", "Partially active" = "activitypartially active", "Active" = "activityactive", "Alcohol low risk" = "alcohollow risk", "Alcohol moderate/increased risk" = "alcoholmoderate or increased risk", "Former smoker" = "smokeformer smoker", "Smoker" = "smokesmoker"), exp = TRUE, scale = TRUE, error_format = "({conf.low}-{conf.high})", to.file = "docx", file.name = "Multivariate_1-3_male.docx")
+
+publication_layout=theme_bw()+
+theme(panel.grid.major=element_blank(),
+    panel.grid.minor=element_blank(),
+    panel.border=element_blank(),
+    axis.line=element_line(),
+    text=element_text(family='Times New Roman'),
+    legend.title=element_blank(), 
+    axis.text=element_text(size=10),
+    axis.title=element_text(size=12),
+    legend.text = element_text(size = 12))
+
+
+plot_summs(Model_socio_economic_socio_demographic_1_m, Model_socio_economic_socio_demographic_biological_1_m, Model_socio_economic_socio_demographic_biological_behavioral_1_m, coefs = c("Secondary education" = "educationupper secondary education", "Tertiary education" = "educationtertiary education", "Rural area" = "urban_rural", "Foreigner" = "nationality", "French" = "languagefrench", "Italian" = "languageitalian", "70-79" = "age_cut70-79", "80+" = "age_cut80+", "Slight difficulty (FL)" = "FLSlight difficulty", "Great difficulty (FL)" = "FLGreat difficulty", "Inability (FL)" = "FLInability", "Obesity" = "bmi_cutobesity", "Overweight" = "bmi_cutoverweight", "Underweight" = "bmi_cutunderweight", "Average (SHS)" = "SHS_collapsedaverage", "Poor (SHS)" = "SHS_collapsedpoor", "Very poor (SHS)" = "SHS_collapsedvery poor", "Diabetes" = "diabetes", "Osteoarthritis" = "osteoarthritis", "Heart attack" = "heart_attack", "Stroke" = "stroke", "Urinary incontinence" = "urinary_incontinence", "Osteoporosis" = "osteoporosis", "Partially active" = "activitypartially active", "Active" = "activityactive", "Alcohol low risk" = "alcohollow risk", "Alcohol moderate/increased risk" = "alcoholmoderate or increased risk", "Former smoker" = "smokeformer smoker", "Smoker" = "smokesmoker"), scale = TRUE, plot.distributions = FALSE, exp = TRUE) + coord_cartesian(xlim = c(0, NA)) + scale_x_continuous(breaks = c(0.1, 0.2, 0.5, 1, 2, 5, 10), limits=c(0.1, 10)) + coord_trans(x="log10") + publication_layout + labs(x = "\n aOR \n ", y = NULL)
+```
+
+### Women
+
+-   `socio_economic_covariate` & `socio_demographic_covariate`:
+
+```{r}
+Model_socio_economic_socio_demographic_1_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language, 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_1_fa<- jtools::summ(Model_socio_economic_socio_demographic_1_f,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_1_fa
+```
+
+-   `socio_economic_covariate` & `socio_demographic_covariate` & `biological_covariates`:
+-   SHS-Variable factor: "very good and good" get combined
+
+```{r}
+Model_socio_economic_socio_demographic_biological_1_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis, 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_biological_1_fa<- jtools::summ(Model_socio_economic_socio_demographic_biological_1_f,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_biological_1_fa
+```
+
+-   `socio_economic_covariate` & `socio_demographic_covariate` & `biological_covariates` & `behavioral_covariate`:
+
+```{r}
+Model_socio_economic_socio_demographic_biological_behavioral_1_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke, 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+Model_socio_economic_socio_demographic_biological_behavioral_1_fa<- jtools::summ(Model_socio_economic_socio_demographic_biological_behavioral_1_f,exp = TRUE, vifs = TRUE, confint = TRUE, digits = 6)
+Model_socio_economic_socio_demographic_biological_behavioral_1_fa
+```
+
+#### Model comparison women
+
+```{r message=FALSE, warning=FALSE}
+export_summs(Model_socio_economic_socio_demographic_1_f, Model_socio_economic_socio_demographic_biological_1_f, Model_socio_economic_socio_demographic_biological_behavioral_1_f, coefs = c("Secondary education" = "educationupper secondary education", "Tertiary education" = "educationtertiary education", "Rural area" = "urban_rural", "Foreigner" = "nationality", "French" = "languagefrench", "Italian" = "languageitalian", "70-79" = "age_cut70-79", "80+" = "age_cut80+", "Slight difficulty (FL)" = "FLSlight difficulty", "Great difficulty (FL)" = "FLGreat difficulty", "Inability (FL)" = "FLInability", "Obesity" = "bmi_cutobesity", "Overweight" = "bmi_cutoverweight", "Underweight" = "bmi_cutunderweight", "Average (SHS)" = "SHS_collapsedaverage", "Poor (SHS)" = "SHS_collapsedpoor", "Very poor (SHS)" = "SHS_collapsedvery poor", "Diabetes" = "diabetes", "Osteoarthritis" = "osteoarthritis", "Heart attack" = "heart_attack", "Stroke" = "stroke", "Urinary incontinence" = "urinary_incontinence", "Osteoporosis" = "osteoporosis", "Partially active" = "activitypartially active", "Active" = "activityactive", "Alcohol low risk" = "alcohollow risk", "Alcohol moderate/increased risk" = "alcoholmoderate or increased risk", "Former smoker" = "smokeformer smoker", "Smoker" = "smokesmoker"), exp = TRUE, scale = TRUE, error_format = "({conf.low}-{conf.high})", to.file = "docx", file.name = "Multivariate_1-3_female.docx")
+
+plot_summs(Model_socio_economic_socio_demographic_1_f, Model_socio_economic_socio_demographic_biological_1_f, Model_socio_economic_socio_demographic_biological_behavioral_1_f, coefs = c("Secondary education" = "educationupper secondary education", "Tertiary education" = "educationtertiary education", "Rural area" = "urban_rural", "Foreigner" = "nationality", "French" = "languagefrench", "Italian" = "languageitalian", "70-79" = "age_cut70-79", "80+" = "age_cut80+", "Slight difficulty (FL)" = "FLSlight difficulty", "Great difficulty (FL)" = "FLGreat difficulty", "Inability (FL)" = "FLInability", "Obesity" = "bmi_cutobesity", "Overweight" = "bmi_cutoverweight", "Underweight" = "bmi_cutunderweight", "Average (SHS)" = "SHS_collapsedaverage", "Poor (SHS)" = "SHS_collapsedpoor", "Very poor (SHS)" = "SHS_collapsedvery poor", "Diabetes" = "diabetes", "Osteoarthritis" = "osteoarthritis", "Heart attack" = "heart_attack", "Stroke" = "stroke", "Urinary incontinence" = "urinary_incontinence", "Osteoporosis" = "osteoporosis", "Partially active" = "activitypartially active", "Active" = "activityactive", "Alcohol low risk" = "alcohollow risk", "Alcohol moderate/increased risk" = "alcoholmoderate or increased risk", "Former smoker" = "smokeformer smoker", "Smoker" = "smokesmoker"), scale = TRUE, plot.distributions = FALSE, exp = TRUE) + publication_layout + labs(x = "\n AOR \n ", y = NULL) + coord_cartesian(xlim = c(0, NA)) + scale_x_continuous(limits=c(0.1, 20), breaks = c(0, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20)) + coord_trans(x="log10") + publication_layout + labs(x = "\n aOR \n ", y = NULL)
+```
+
+### Model comparison men vs. women
+
+-   Model with `socio_economic_covariate` & `socio_demographic_covariate` & `biological_covariates` & `behavioral_covariate`:
+
+```{r message=FALSE, warning=FALSE}
+export_summs(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_1_f, exp = TRUE, scale = TRUE, error_format = "[{conf.low}, {conf.high}]")
+
+plot_summs(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_1_f, coefs = c("Secondary education" = "educationupper secondary education", "Tertiary education" = "educationtertiary education", "Rural area" = "urban_rural", "Foreigner" = "nationality", "French" = "languagefrench", "Italian" = "languageitalian", "70-79" = "age_cut70-79", "80+" = "age_cut80+", "Slight difficulty (FL)" = "FLSlight difficulty", "Great difficulty (FL)" = "FLGreat difficulty", "Inability (FL)" = "FLInability", "Obesity" = "bmi_cutobesity", "Overweight" = "bmi_cutoverweight", "Underweight" = "bmi_cutunderweight", "Average (SHS)" = "SHS_collapsedaverage", "Poor (SHS)" = "SHS_collapsedpoor", "Very poor (SHS)" = "SHS_collapsedvery poor", "Diabetes" = "diabetes", "Osteoarthritis" = "osteoarthritis", "Heart attack" = "heart_attack", "Stroke" = "stroke", "Urinary incontinence" = "urinary_incontinence", "Osteoporosis" = "osteoporosis", "Partially active" = "activitypartially active", "Active" = "activityactive", "Alcohol low risk" = "alcohollow risk", "Alcohol moderate/increased risk" = "alcoholmoderate or increased risk", "Former smoker" = "smokeformer smoker", "Smoker" = "smokesmoker"), scale = TRUE, plot.distributions = FALSE, exp = TRUE) + publication_layout + labs(x = "\n AOR \n ", y = NULL) + coord_cartesian(xlim = c(0, NA)) + scale_x_continuous(limits=c(0.1, 20), breaks = c(0, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20)) + coord_trans(x="log10") + publication_layout + labs(x = "\n aOR \n ", y = NULL)
+```
+
+## Interactions in male and female Model 3 {.tabset}
+
+-   Interaction terms with age categories ($age\_categories * x$)
+
+    $x = education, urban\_rural, nationality, language, FL, bmi\_cut, SHS\_collapsed, diabetes,\\ osteoarthritis, heart\_attack, stroke, urinary\_incontinence, osteoporosis, activity, alcohol, \\smoke$
+
+### Men
+
+```{r}
+# education 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + education * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# jtools::summ(Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_m, exp = TRUE, confint = TRUE, digits = 3)
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_education_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_m)
+
+# urban_rural
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_2_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urban_rural * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_urban_rural_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_2_m)
+
+# nationality
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_3_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + nationality * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_nationality_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_3_m)
+
+# language
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_4_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + language * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_language_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_4_m)
+
+# FL 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_5_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + FL * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_FL_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_5_m)
+
+# bmi_cut
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_6_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + bmi_cut * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_bmi_cut_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_6_m)
+
+# SHS_collapsed 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_7_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + SHS_collapsed * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_SHS_collapsed_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_7_m)
+
+# diabetes
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_8_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + diabetes * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_diabetes_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_8_m)
+
+# osteoarthritis
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_9_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoarthritis * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_osteoarthritis_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_9_m)
+
+# heart_attack
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_10_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + heart_attack * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_heart_attack_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_10_m)
+
+# stroke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_11_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + stroke * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_stroke_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_11_m)
+
+# urinary_incontinence
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_12_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urinary_incontinence * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_urinary_incontinence_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_12_m)
+
+# osteoporosis 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_13_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoporosis * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_osteoporosis_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_13_m)
+
+# activity
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_14_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + activity * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_activity_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_14_m)
+
+# alcohol
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_15_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + alcohol * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_alcohol_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_15_m)
+
+# smoke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_16_m <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + smoke * I(age_cut), 
+               design = wdat_17_m,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_smoke_m<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_m, Model_socio_economic_socio_demographic_biological_behavioral_interactions_16_m)
+
+
+Interaction_age_m <- round(c(Interaction_LRT_age_education_m$p, Interaction_LRT_age_urban_rural_m$p, Interaction_LRT_age_nationality_m$p, Interaction_LRT_age_language_m$p, Interaction_LRT_age_FL_m$p, Interaction_LRT_age_bmi_cut_m$p, Interaction_LRT_age_SHS_collapsed_m$p, Interaction_LRT_age_diabetes_m$p, Interaction_LRT_age_osteoarthritis_m$p, Interaction_LRT_age_heart_attack_m$p, Interaction_LRT_age_stroke_m$p, Interaction_LRT_age_urinary_incontinence_m$p, Interaction_LRT_age_osteoporosis_m$p, Interaction_LRT_age_activity_m$p, Interaction_LRT_age_alcohol_m$p, Interaction_LRT_age_smoke_m$p), 3)
+
+Interaction_names<- c("Education level", "Residential area", "Nationality", "Language region", "Functional limitations", "BMI group", "Self-perceived health status", "Diabetes", "Osteoarthritis", "Heart attack", "Stroke", "Urinary incontinence", "Osteoporosis", "Physical activity", "Chronic alcohol consumption", "Smoking (smoker)")
+
+Interaction_age_table_m <- data.frame(Interaction_names, Interaction_age_m)
+knitr::kable(Interaction_age_table_m, col.names = c('Age categories * Variable', '$P$'), caption = "Likelihood Ratio Test and $P$-value for the
+addition of the interactions to the Main Effects Model 3")
+```
+
+### Women
+
+```{r}
+# education 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + education * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# jtools::summ(Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_f, exp = TRUE, confint = TRUE, digits = 3)
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_education_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_1_f)
+
+# urban_rural
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_2_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urban_rural * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_urban_rural_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_2_f)
+
+# nationality
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_3_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + nationality * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_nationality_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_3_f)
+
+# language
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_4_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + language * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_language_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_4_f)
+
+# FL 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_5_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + FL * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_FL_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_5_f)
+
+# bmi_cut
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_6_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + bmi_cut * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_bmi_cut_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_6_f)
+
+# SHS_collapsed 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_7_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + SHS_collapsed * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_SHS_collapsed_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_7_f)
+
+# diabetes
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_8_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + diabetes * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_diabetes_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_8_f)
+
+# osteoarthritis
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_9_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoarthritis * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_osteoarthritis_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_9_f)
+
+# heart_attack
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_10_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + heart_attack * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_heart_attack_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_10_f)
+
+# stroke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_11_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + stroke * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_stroke_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_11_f)
+
+# urinary_incontinence
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_12_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urinary_incontinence * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_urinary_incontinence_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_12_f)
+
+# osteoporosis 
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_13_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoporosis * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_osteoporosis_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_13_f)
+
+# activity
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_14_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + activity * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_activity_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_14_f)
+
+# alcohol
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_15_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + alcohol * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_alcohol_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_15_f)
+
+# smoke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_16_f <- svyglm(I(fall=="fall last 12 months") ~ education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + smoke * I(age_cut), 
+               design = wdat_17_f,
+               family = quasibinomial(logit))
+
+# model comparison and LR-test p < 0.05
+Interaction_LRT_age_smoke_f<-anova(Model_socio_economic_socio_demographic_biological_behavioral_1_f, Model_socio_economic_socio_demographic_biological_behavioral_interactions_16_f)
+
+
+Interaction_age_f <- round(c(Interaction_LRT_age_education_f$p, Interaction_LRT_age_urban_rural_f$p, Interaction_LRT_age_nationality_f$p, Interaction_LRT_age_language_f$p, Interaction_LRT_age_FL_f$p, Interaction_LRT_age_bmi_cut_f$p, Interaction_LRT_age_SHS_collapsed_f$p, Interaction_LRT_age_diabetes_f$p, Interaction_LRT_age_osteoarthritis_f$p, Interaction_LRT_age_heart_attack_f$p, Interaction_LRT_age_stroke_f$p, Interaction_LRT_age_urinary_incontinence_f$p, Interaction_LRT_age_osteoporosis_f$p, Interaction_LRT_age_activity_f$p, Interaction_LRT_age_alcohol_f$p, Interaction_LRT_age_smoke_f$p), 3)
+
+Interaction_age_table_f <- data.frame(Interaction_names, Interaction_age_f)
+knitr::kable(Interaction_age_table_f, col.names = c('Age categories * Variable', '$P$'), caption = "Likelihood Ratio Test and $P$-value for the
+addition of the interactions to the Main Effects Model 3")
+```
+
+## Interaction genderunspecific Model
+
+-   Interaction terms with sex ($age\_categories * x$)
+
+    $x = education, urban\_rural, nationality, language, age\_cut, FL, bmi\_cut, SHS\_collapsed, diabetes,\\ osteoarthritis, heart\_attack, stroke, urinary\_incontinence, osteoporosis, activity, alcohol, \\smoke$
+
+```{r}
+# education
+Model_socio_economic_socio_demographic_biological_behavioral_1 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke, 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_1 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + education *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+# jtools::summ(Model_socio_economic_socio_demographic_biological_behavioral_interactions_1,exp = TRUE, confint = TRUE, digits = 3)
+
+Interaction_LRT_sex_education <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_1)
+
+# urban_rural
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_2 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urban_rural *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_urban_rural <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_2)
+
+# nationality
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_3 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + nationality *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_nationality <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_3)
+
+# language
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_4 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + language *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_language <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_4)
+
+# age_cut
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_5 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + age_cut *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_age_cut <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_5)
+
+# FL
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_6 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + FL *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_FL <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_6)
+
+# bmi_cut
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_7 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + bmi_cut *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_bmi_cut <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_7)
+
+# SHS_collapsed
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_8 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + SHS_collapsed *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_SHS_collapsed <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_8)
+
+# diabetes
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_9 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + diabetes *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_diabetes <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_9)
+
+# osteoarthritis
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_10 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoarthritis *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_osteoarthritis <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_10)
+
+# heart_attack
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_11 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + heart_attack *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_heart_attack <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_11)
+
+# stroke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_12 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + stroke *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_stroke <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_12)
+
+# urinary_incontinence
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_13 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + urinary_incontinence *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_urinary_incontinence <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_13)
+
+# osteoporosis
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_14 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + osteoporosis *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_osteoporosis <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_14)
+
+# activity
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_15 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + activity *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_activity <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_15)
+
+# alcohol
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_16 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + alcohol *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_alcohol <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_16)
+
+# smoke
+Model_socio_economic_socio_demographic_biological_behavioral_interactions_17 <- svyglm(I(fall=="fall last 12 months") ~ sex + education + urban_rural + nationality + language + age_cut + FL + bmi_cut + SHS_collapsed + diabetes + osteoarthritis + heart_attack + stroke + urinary_incontinence + osteoporosis + activity + alcohol + smoke + smoke *I(sex), 
+               design = wdat_17,
+               family = quasibinomial(logit))
+
+Interaction_LRT_sex_smoke <- anova(Model_socio_economic_socio_demographic_biological_behavioral_1, Model_socio_economic_socio_demographic_biological_behavioral_interactions_17)
+
+Interaction_names_1<- c("Education level", "Residential area", "Nationality", "Language region", "Age categories", "Functional limitations", "BMI group", "Self-perceived health status", "Diabetes", "Osteoarthritis", "Heart attack", "Stroke", "Urinary incontinence", "Osteoporosis", "Physical activity", "Chronic alcohol consumption", "Smoking (smoker)")
+
+Interaction_sex <- round(c(Interaction_LRT_sex_education$p, Interaction_LRT_sex_urban_rural$p, Interaction_LRT_sex_nationality$p, Interaction_LRT_sex_language$p, Interaction_LRT_sex_age_cut$p, Interaction_LRT_sex_FL$p, Interaction_LRT_sex_bmi_cut$p, Interaction_LRT_sex_SHS_collapsed$p, Interaction_LRT_sex_diabetes$p, Interaction_LRT_sex_osteoarthritis$p, Interaction_LRT_sex_heart_attack$p, Interaction_LRT_sex_stroke$p, Interaction_LRT_sex_urinary_incontinence$p, Interaction_LRT_sex_osteoporosis$p, Interaction_LRT_sex_activity$p, Interaction_LRT_sex_alcohol$p, Interaction_LRT_sex_smoke$p), 3)
+
+Interaction_sex_table <- data.frame(Interaction_names_1, Interaction_sex)
+knitr::kable(Interaction_sex_table, col.names = c('Sex * Variable', '$P$'), caption = "Likelihood Ratio Test and $P$-value for the
+addition of the interactions to the Main Effects Model 3")
+
+```
+
+## Analysis of fall count
+
+### Prevalence of multiple falls by characteristic {.tabset}
+
+-   $y = fall\_count$ (levels: 1,2,3,4; no fall, 1 fall, two falls, more then two falls)
+
+-   $y = fall\_count\_collapsed$ is used in this analysis and is generated by dichotomization from $fall\_count$ (1,2 = no fall or 1; 3,4 = two falls or more)
+
+-   Where $y$ represents the dependent variable
+
+-   Due to the scope of this publication, the analysis was limited to the prevalence of multiple falls estimation.
+
+#### Men
+
+-   education
+
+```{r}
+tab_amount_fall_count_collapsed_education_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ education,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_education_m[,2:4],3)*100
+```
+
+-   urban_rural
+
+```{r}
+tab_amount_fall_count_collapsed_urban_rural_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ urban_rural,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_urban_rural_m[,2:4],3)*100
+```
+
+-   nationality
+
+```{r}
+tab_amount_fall_count_collapsed_nationality_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ nationality,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_nationality_m[,2:4],3)*100
+```
+
+-   language
+
+```{r}
+tab_amount_fall_count_collapsed_language_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ language,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_language_m[,2:4],3)*100
+```
+
+-   age_cut
+
+```{r}
+tab_amount_fall_count_collapsed_age_cut_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ age_cut,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_age_cut_m[,2:4],3)*100
+```
+
+-   FL
+
+```{r}
+tab_amount_fall_count_collapsed_FL_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ FL,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_FL_m[,2:4],3)*100
+```
+
+-   bmi_cut
+
+```{r}
+tab_amount_fall_count_collapsed_bmi_cut_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ bmi_cut,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_bmi_cut_m[,2:4],3)*100
+```
+
+-   SHS
+
+```{r}
+tab_amount_fall_count_collapsed_SHS_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ SHS,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_SHS_m[,2:4],3)*100
+```
+
+-   diabetes
+
+```{r}
+tab_amount_fall_count_collapsed_diabetes_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ diabetes,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_diabetes_m[,2:4],3)*100
+```
+
+-   osteoarthritis
+
+```{r}
+tab_amount_fall_count_collapsed_osteoarthritis_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ osteoarthritis,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_osteoarthritis_m[,2:4],3)*100
+```
+
+-   heart_attack
+
+```{r}
+tab_amount_fall_count_collapsed_heart_attack_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ heart_attack,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_heart_attack_m[,2:4],3)*100
+```
+
+-   stroke
+
+```{r}
+tab_amount_fall_count_collapsed_stroke_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ stroke,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_stroke_m[,2:4],3)*100
+```
+
+-   urinary_incontinence
+
+```{r}
+tab_amount_fall_count_collapsed_urinary_incontinence_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ urinary_incontinence,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_urinary_incontinence_m[,2:4],3)*100
+```
+
+-   osteoporosis
+
+```{r}
+tab_amount_fall_count_collapsed_osteoporosis_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ osteoporosis,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_osteoporosis_m[,2:4],3)*100
+```
+
+-   activity
+
+```{r}
+tab_amount_fall_count_collapsed_activity_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ activity,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_activity_m[,2:4],3)*100
+```
+
+-   alcohol
+
+```{r}
+tab_amount_fall_count_collapsed_alcohol_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ alcohol,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_alcohol_m[,2:4],3)*100
+```
+
+-   smoke
+
+```{r}
+tab_amount_fall_count_collapsed_smoke_m <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ smoke,
+  design = wdat_17_m,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_smoke_m[,2:4],3)*100
+```
+
+#### Women
+
+-   education
+
+```{r}
+tab_amount_fall_count_collapsed_education_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ education,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_education_f[,2:4],3)*100
+```
+
+-   urban_rural
+
+```{r}
+tab_amount_fall_count_collapsed_urban_rural_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ urban_rural,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_urban_rural_f[,2:4],3)*100
+```
+
+-   nationality
+
+```{r}
+tab_amount_fall_count_collapsed_nationality_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ nationality,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_nationality_f[,2:4],3)*100
+```
+
+-   language
+
+```{r}
+tab_amount_fall_count_collapsed_language_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ language,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_language_f[,2:4],3)*100
+```
+
+-   age_cut
+
+```{r}
+tab_amount_fall_count_collapsed_age_cut_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ age_cut,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_age_cut_f[,2:4],3)*100
+```
+
+-   FL
+
+```{r}
+tab_amount_fall_count_collapsed_FL_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ FL,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_FL_f[,2:4],3)*100
+```
+
+-   bmi_cut
+
+```{r}
+tab_amount_fall_count_collapsed_bmi_cut_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ bmi_cut,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_bmi_cut_f[,2:4],3)*100
+```
+
+-   SHS
+
+```{r}
+tab_amount_fall_count_collapsed_SHS_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ SHS,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_SHS_f[,2:4],3)*100
+```
+
+-   diabetes
+
+```{r}
+tab_amount_fall_count_collapsed_diabetes_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ diabetes,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_diabetes_f[,2:4],3)*100
+```
+
+-   osteoarthritis
+
+```{r}
+tab_amount_fall_count_collapsed_osteoarthritis_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ osteoarthritis,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_osteoarthritis_f[,2:4],3)*100
+```
+
+-   heart_attack
+
+```{r}
+tab_amount_fall_count_collapsed_heart_attack_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ heart_attack,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_heart_attack_f[,2:4],3)*100
+```
+
+-   stroke
+
+```{r}
+tab_amount_fall_count_collapsed_stroke_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ stroke,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_stroke_f[,2:4],3)*100
+```
+
+-   urinary_incontinence
+
+```{r}
+tab_amount_fall_count_collapsed_urinary_incontinence_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ urinary_incontinence,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_urinary_incontinence_f[,2:4],3)*100
+```
+
+-   osteoporosis
+
+```{r}
+tab_amount_fall_count_collapsed_osteoporosis_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ osteoporosis,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_osteoporosis_f[,2:4],3)*100
+```
+
+-   activity
+
+```{r}
+tab_amount_fall_count_collapsed_activity_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ activity,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_activity_f[,2:4],3)*100
+```
+
+-   alcohol
+
+```{r}
+tab_amount_fall_count_collapsed_alcohol_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ alcohol,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_alcohol_f[,2:4],3)*100
+```
+
+-   smoke
+
+```{r}
+tab_amount_fall_count_collapsed_smoke_f <- svyby(formula = ~I(fall_count_collapsed=="two_falls_or_more"),
+  by = ~ smoke,
+  design = wdat_17_f,
+  FUN = svyciprop,
+  na.rm = TRUE,
+  keep.names = FALSE,
+  vartype="ci",
+  method = "likelihood"
+)
+round(tab_amount_fall_count_collapsed_smoke_f[,2:4],3)*100
+```
+
+------------------------------------------------------------------------
+
+# References
+
+::: {#refs}
+:::
+
+------------------------------------------------------------------------
+
+# Appendix
+
+In the appendix, we report a printout of all R packages used in the analysis and their versions to facilitate the reproducibility of the analysis/results.
+
+## Appendix
+
+```{r}
+pander(sessionInfo(), compact = TRUE)
+```
