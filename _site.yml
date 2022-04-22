@@ -1,6 +1,6 @@
-name: "MyLabJournal"
+name: "Andri Gerber"
 navbar:
-  title: "MyLabJournal"
+  title: "Publication website"
   left:
     - text: "Home"
       href: index.html
